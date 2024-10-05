@@ -17,7 +17,7 @@ use crate::{
     GameState, WINDOW_SIZE,
 };
 
-use super::new_creature_screen::PlayerCreature;
+use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
 
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 0.5;
@@ -437,13 +437,15 @@ fn stats_recovery(mut query: Query<(&mut BattleCreatureStats, &BattleCreature)>,
 fn handle_battle_over(
     ally_query: Query<Entity, (With<BattleCreature>, Without<Enemy>)>,
     enemy_query: Query<Entity, (With<BattleCreature>, With<Enemy>)>,
-    mut next_state: ResMut<NextState<GameState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut next_game_result: ResMut<NextState<GameResult>>,
 ) {
     if ally_query.is_empty() {
-        // TODO: game over!
+        next_game_result.set(GameResult::Lose);
+        next_game_state.set(GameState::GameOver);
+    } else if enemy_query.is_empty() {
+        next_game_state.set(GameState::CreatureManager);
     }
 
-    if enemy_query.is_empty() {
-        next_state.set(GameState::NewCreature);
-    }
+    // TODO: victory on last stage if no infinity mode
 }

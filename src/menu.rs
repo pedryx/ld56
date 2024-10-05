@@ -63,7 +63,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                         ..Default::default()
                     },
                     button_colors,
-                    ChangeState(GameState::NewCreature),
+                    ChangeState(GameState::CreatureManager),
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(

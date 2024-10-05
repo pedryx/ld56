@@ -8,8 +8,8 @@ use crate::{
     GameState, WINDOW_SIZE,
 };
 
-const MIN_CREATURE_TIER: u8 = 1;
-const MAX_CREATURE_TIER: u8 = 3;
+pub const MIN_CREATURE_TIER: u8 = 1;
+pub const MAX_CREATURE_TIER: u8 = 3;
 
 pub struct NewCreatureScreenPlugin;
 

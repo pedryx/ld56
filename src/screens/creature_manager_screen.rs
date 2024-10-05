@@ -2,13 +2,17 @@ use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
-    creature::{CreatureGeneration, CreatureStats, PopulationSize, CREATURE_Z},
+    creature::{
+        generate_creature, CreatureGeneration, CreatureStats, GenerateCreatureRng, PopulationSize,
+        CREATURE_Z,
+    },
     loading::TextureAssets,
+    rounds::Round,
     ui::{create_basic_button, create_change_state_button, create_mini_button},
     GameState, WINDOW_SIZE,
 };
 
-use super::new_creature_screen::PlayerCreature;
+use super::new_creature_screen::{PlayerCreature, MAX_CREATURE_TIER, MIN_CREATURE_TIER};
 
 const CREATURES_Z: f32 = 0.0;
 const GRID_SIZE: Vec2 = Vec2::new(8.0, 3.0);
@@ -22,7 +26,10 @@ impl Plugin for CreatureManagerScreenPlugin {
         app.init_resource::<SelectedCreaturesCounter>()
             .insert_resource(CombinationRng(StdRng::from_entropy()))
             .add_event::<CreatureCombinedEvent>()
-            .add_systems(OnEnter(GameState::CreatureManager), setup_ui)
+            .add_systems(
+                OnEnter(GameState::CreatureManager),
+                (generate_new_creature, setup_ui).chain(),
+            )
             .add_systems(OnExit(GameState::CreatureManager), cleanup)
             .add_systems(
                 Update,
@@ -70,6 +77,36 @@ struct PopulationText;
 struct CreatureButton {
     entity: Entity,
     selected: bool,
+}
+
+fn generate_new_creature(
+    mut commands: Commands,
+    mut generate_creature_rng: ResMut<GenerateCreatureRng>,
+    mut creature_generation: ResMut<CreatureGeneration>,
+    textures: Res<TextureAssets>,
+    round: Res<Round>,
+) {
+    let mut count = 1;
+
+    if round.0 == 1 {
+        count += 1;
+    }
+
+    for _ in 0..count {
+        let tier = generate_creature_rng
+            .0
+            .gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
+        let entity = generate_creature(
+            &mut commands,
+            &mut generate_creature_rng.0,
+            &textures,
+            tier,
+            creature_generation.0,
+        );
+
+        creature_generation.0 += 1;
+        commands.entity(entity).insert(PlayerCreature);
+    }
 }
 
 fn setup_ui(

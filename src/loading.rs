@@ -8,7 +8,7 @@ impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
             LoadingState::new(GameState::Loading)
-                .continue_to_state(GameState::NewCreature)
+                .continue_to_state(GameState::CreatureManager)
                 .load_collection::<AudioAssets>()
                 .load_collection::<TextureAssets>(),
         );

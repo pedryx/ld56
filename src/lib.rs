@@ -3,6 +3,7 @@
 mod creature;
 mod loading;
 mod menu;
+mod rounds;
 mod screens;
 mod ui;
 
@@ -14,8 +15,10 @@ use crate::ui::UIPlugin;
 
 use bevy::app::App;
 use bevy::prelude::*;
+use rounds::RoundsPlugin;
 use screens::battle_screen::BattleScreenPlugin;
 use screens::creature_manager_screen::CreatureManagerScreenPlugin;
+use screens::game_over_screen::GameOverScreenPlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
@@ -25,6 +28,7 @@ enum GameState {
     NewCreature,
     Battle,
     CreatureManager,
+    GameOver,
 }
 
 pub const WINDOW_SIZE: Vec2 = Vec2::new(1280.0, 720.0);
@@ -41,6 +45,8 @@ impl Plugin for GamePlugin {
             CreaturePlugin,
             BattleScreenPlugin,
             CreatureManagerScreenPlugin,
+            GameOverScreenPlugin,
+            RoundsPlugin,
         ));
 
         app.add_systems(Startup, setup_camera);
