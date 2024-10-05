@@ -12,7 +12,7 @@ use super::new_creature_screen::PlayerCreature;
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 0.5;
 
-const ENEMY_CREATURE_TIER: u8 = 0;
+const ENEMY_CREATURE_TIER: u8 = 1;
 const ENEMY_CREATURE_COUNT: u8 = 1;
 
 pub struct BattleScreenPlugin;
