@@ -114,6 +114,7 @@ fn handle_change_state_buttons(
 ) {
     for (&interaction, ChangeState(state)) in query.iter() {
         if interaction == Interaction::Pressed {
+            println!("swithing to next state");
             next_state.set(state.clone());
         }
     }

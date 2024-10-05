@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
-    creature::{CreatureStats, PopulationSize, CREATURE_Z},
+    creature::{CreatureGeneration, CreatureStats, PopulationSize, CREATURE_Z},
     loading::TextureAssets,
     ui::{create_basic_button, create_change_state_button, create_mini_button},
     GameState, WINDOW_SIZE,
@@ -75,14 +75,20 @@ struct CreatureButton {
 fn setup_ui(
     mut commands: Commands,
     mut query: Query<
-        (Entity, &mut Visibility, &mut Transform, &PopulationSize),
+        (
+            Entity,
+            &mut Visibility,
+            &mut Transform,
+            &PopulationSize,
+            &CreatureStats,
+        ),
         With<PlayerCreature>,
     >,
 ) {
     let mut x = 0;
     let mut y = 0;
 
-    for (entity, mut visibility, mut transform, &PopulationSize(count)) in query.iter_mut() {
+    for (entity, mut visibility, mut transform, &PopulationSize(count), _) in query.iter_mut() {
         *visibility = Visibility::Visible;
 
         let grid_pos = Vec2::new(x as f32 + 0.5, y as f32 + 0.4);
@@ -283,6 +289,7 @@ fn handle_combine_button(
     textures: Res<TextureAssets>,
     mut combination_rng: ResMut<CombinationRng>,
     mut ew_creature_created: EventWriter<CreatureCombinedEvent>,
+    mut creature_generation: ResMut<CreatureGeneration>,
 ) {
     if combine_button_query.is_empty() || *combine_button_query.single() != Interaction::Pressed {
         return;
@@ -340,7 +347,10 @@ fn handle_combine_button(
             parent2.stamina_regen
         },
         physical_abilities: Vec::new(),
+        _generation: creature_generation.0,
     };
+
+    creature_generation.0 += 1;
 
     // There are always 3 physical abilities.
     for i in 0..3 {

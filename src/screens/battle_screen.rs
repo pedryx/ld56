@@ -42,7 +42,7 @@ impl Plugin for BattleScreenPlugin {
                 )
                     .chain(),
             )
-            .add_systems(OnExit(GameState::NewCreature), cleanup)
+            .add_systems(OnExit(GameState::Battle), cleanup)
             .add_systems(
                 Update,
                 (
@@ -51,6 +51,7 @@ impl Plugin for BattleScreenPlugin {
                     stats_recovery,
                     attack_enemy,
                     death_system,
+                    handle_battle_over,
                 )
                     .chain()
                     .run_if(in_state(GameState::Battle)),
@@ -198,6 +199,7 @@ fn generate_enemy_creatures(
             &mut generate_creature_rng.0,
             &textures,
             ENEMY_CREATURE_TIER,
+            0,
         );
     }
 }
@@ -429,5 +431,19 @@ fn stats_recovery(mut query: Query<(&mut BattleCreatureStats, &BattleCreature)>,
         if stats.stamina > creature.max_stamina {
             stats.stamina = creature.max_stamina;
         }
+    }
+}
+
+fn handle_battle_over(
+    ally_query: Query<Entity, (With<BattleCreature>, Without<Enemy>)>,
+    enemy_query: Query<Entity, (With<BattleCreature>, With<Enemy>)>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    if ally_query.is_empty() {
+        // TODO: game over!
+    }
+
+    if enemy_query.is_empty() {
+        next_state.set(GameState::NewCreature);
     }
 }

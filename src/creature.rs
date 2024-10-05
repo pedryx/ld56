@@ -31,9 +31,13 @@ pub struct CreaturePlugin;
 
 impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(GenerateCreatureRng(StdRng::from_entropy()));
+        app.insert_resource(GenerateCreatureRng(StdRng::from_entropy()))
+            .init_resource::<CreatureGeneration>();
     }
 }
+
+#[derive(Resource, Default)]
+pub struct CreatureGeneration(pub u64);
 
 #[derive(Component)]
 pub struct PopulationSize(pub u32);
@@ -44,6 +48,7 @@ pub struct CreatureStats {
     pub hp: f32,
     pub stamina: f32,
     pub stamina_regen: f32,
+    pub _generation: u64,
     pub physical_abilities: Vec<PhysicalAbility>,
 }
 
@@ -63,6 +68,7 @@ pub fn generate_creature(
     rng: &mut StdRng,
     textures: &Res<TextureAssets>,
     tier: u8,
+    generation: u64,
 ) -> Entity {
     let creature = CreatureStats {
         movement_speed: generate_stat_value(
@@ -80,6 +86,7 @@ pub fn generate_creature(
             generate_physical_ability("Punch", tier, rng),
             generate_physical_ability("Kick", tier, rng),
         ],
+        _generation: generation,
     };
     let population = PopulationSize(rng.gen_range(MIN_POPULATION..=MAX_POPULATION));
 
