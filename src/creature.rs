@@ -25,6 +25,8 @@ const MAX_PHYS_COOLDOWN: f32 = 2.0;
 const MIN_POPULATION: u32 = 5;
 const MAX_POPULATION: u32 = 15;
 
+pub const CREATURE_Z: f32 = 10.0;
+
 pub struct CreaturePlugin;
 
 impl Plugin for CreaturePlugin {
@@ -56,7 +58,7 @@ pub struct PhysicalAbility {
 #[derive(Resource)]
 pub struct GenerateCreatureRng(pub StdRng);
 
-pub fn create_creature(
+pub fn generate_creature(
     commands: &mut Commands,
     rng: &mut StdRng,
     textures: &Res<TextureAssets>,
@@ -81,15 +83,11 @@ pub fn create_creature(
     };
     let population = PopulationSize(rng.gen_range(MIN_POPULATION..=MAX_POPULATION));
 
-    info!(
-        "generate creature of population {:?}: {:?}",
-        population.0, creature
-    );
-
     commands
         .spawn(SpriteBundle {
             texture: textures.creature.clone(),
             visibility: Visibility::Hidden,
+            transform: Transform::from_scale(Vec2::splat(1.4).extend(CREATURE_Z)),
             ..default()
         })
         .insert(creature)

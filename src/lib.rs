@@ -15,6 +15,7 @@ use crate::ui::UIPlugin;
 use bevy::app::App;
 use bevy::prelude::*;
 use screens::battle_screen::BattleScreenPlugin;
+use screens::creature_manager_screen::CreatureManagerScreenPlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
@@ -23,6 +24,7 @@ enum GameState {
     Menu,
     NewCreature,
     Battle,
+    CreatureManager,
 }
 
 pub const WINDOW_SIZE: Vec2 = Vec2::new(1280.0, 720.0);
@@ -38,6 +40,7 @@ impl Plugin for GamePlugin {
             NewCreatureScreenPlugin,
             CreaturePlugin,
             BattleScreenPlugin,
+            CreatureManagerScreenPlugin,
         ));
 
         app.add_systems(Startup, setup_camera);

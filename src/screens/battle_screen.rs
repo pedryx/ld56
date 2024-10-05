@@ -11,7 +11,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
     creature::{
-        create_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
+        generate_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
     },
     loading::TextureAssets,
     GameState, WINDOW_SIZE,
@@ -193,7 +193,7 @@ fn generate_enemy_creatures(
     textures: Res<TextureAssets>,
 ) {
     for _ in 0..ENEMY_CREATURE_COUNT {
-        create_creature(
+        generate_creature(
             &mut commands,
             &mut generate_creature_rng.0,
             &textures,
@@ -393,13 +393,7 @@ fn attack_enemy(
             continue;
         }
 
-        println!("getting attack, reaming hp: {}", stats.hp);
-
         *stats_query.get_mut(entity).unwrap() = stats;
-
-        // if let Ok(mut entity_stats) = stats_query.get_mut(entity) {
-        //     *entity_stats = stats;
-        // }
     }
 }
 

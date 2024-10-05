@@ -21,7 +21,7 @@ struct ButtonColors {
 impl Default for ButtonColors {
     fn default() -> Self {
         ButtonColors {
-            normal: Color::linear_rgb(0.15, 0.15, 0.15),
+            normal: Color::BLACK,
             hovered: Color::linear_rgb(0.25, 0.25, 0.25),
         }
     }
@@ -36,18 +36,23 @@ pub fn create_change_state_button(
     pos: Vec2,
     game_state: GameState,
 ) -> Entity {
-    let entity = create_button(commands, title, pos);
+    let entity = create_basic_button(commands, title, pos);
     commands.entity(entity).insert(ChangeState(game_state)).id()
 }
 
-pub fn create_button(commands: &mut Commands, title: &'static str, pos: Vec2) -> Entity {
+pub fn create_button(
+    commands: &mut Commands,
+    title: &'static str,
+    pos: Vec2,
+    size: Vec2,
+) -> Entity {
     let button_colors = ButtonColors::default();
     commands
         .spawn((
             ButtonBundle {
                 style: Style {
-                    width: Val::Px(BUTTON_SIZE.x),
-                    height: Val::Px(BUTTON_SIZE.y),
+                    width: Val::Px(size.x),
+                    height: Val::Px(size.y),
                     justify_content: JustifyContent::Center,
                     align_items: AlignItems::Center,
                     margin: UiRect::new(
@@ -74,6 +79,14 @@ pub fn create_button(commands: &mut Commands, title: &'static str, pos: Vec2) ->
             ));
         })
         .id()
+}
+
+pub fn create_basic_button(commands: &mut Commands, title: &'static str, pos: Vec2) -> Entity {
+    create_button(commands, title, pos, BUTTON_SIZE)
+}
+
+pub fn create_mini_button(commands: &mut Commands, title: &'static str, pos: Vec2) -> Entity {
+    create_button(commands, title, pos, Vec2::splat(BUTTON_SIZE.y))
 }
 
 fn handle_button_hover(

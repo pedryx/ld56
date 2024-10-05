@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use rand::Rng;
 
 use crate::{
-    creature::{create_creature, GenerateCreatureRng},
+    creature::{generate_creature, GenerateCreatureRng},
     loading::TextureAssets,
     ui::create_change_state_button,
     GameState, WINDOW_SIZE,
@@ -31,7 +31,7 @@ fn setup_ui(mut commands: Commands) {
         &mut commands,
         "Continue",
         WINDOW_SIZE * Vec2::new(0.5, 0.9),
-        GameState::Battle,
+        GameState::CreatureManager,
     );
     commands.entity(button).insert(NewCreatureScreenItem);
 }
@@ -47,10 +47,13 @@ fn spawn_creature(
     mut generate_creature_eng: ResMut<GenerateCreatureRng>,
     textures: Res<TextureAssets>,
 ) {
-    let tier = generate_creature_eng
-        .0
-        .gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
-    let entity = create_creature(&mut commands, &mut generate_creature_eng.0, &textures, tier);
+    for _ in 0..2 {
+        let tier = generate_creature_eng
+            .0
+            .gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
+        let entity =
+            generate_creature(&mut commands, &mut generate_creature_eng.0, &textures, tier);
 
-    commands.entity(entity).insert(PlayerCreature);
+        commands.entity(entity).insert(PlayerCreature);
+    }
 }
