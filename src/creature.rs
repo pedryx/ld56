@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use rand_distr::{num_traits::ops::inv, Distribution, Normal};
+use rand_distr::{Distribution, Normal};
 
 use crate::loading::TextureAssets;
 
@@ -12,6 +12,8 @@ const MIN_HP: f32 = 50.0;
 const MAX_HP: f32 = 250.0;
 const MIN_STAMINA: f32 = 50.0;
 const MAX_STAMINA: f32 = 250.0;
+const MIN_STAMINA_REGEN: f32 = 1.0;
+const MAX_STAMINA_REGEN: f32 = 25.0;
 
 const MIN_PHYS_DMG: f32 = 5.0;
 const MAX_PHYS_DMG: f32 = 20.0;
@@ -39,12 +41,13 @@ pub struct CreatureStats {
     pub movement_speed: f32,
     pub hp: f32,
     pub stamina: f32,
+    pub stamina_regen: f32,
     pub physical_abilities: Vec<PhysicalAbility>,
 }
 
 #[derive(Debug, Clone)]
 pub struct PhysicalAbility {
-    pub name: &'static str,
+    pub _name: &'static str,
     pub stamina_cost: f32,
     pub damage: f32,
     pub global_cooldown: f32,
@@ -69,6 +72,7 @@ pub fn create_creature(
         ),
         hp: generate_stat_value(MIN_HP, MAX_HP, tier, rng, false),
         stamina: generate_stat_value(MIN_STAMINA, MAX_STAMINA, tier, rng, false),
+        stamina_regen: generate_stat_value(MIN_STAMINA_REGEN, MAX_STAMINA_REGEN, tier, rng, false),
         physical_abilities: vec![
             generate_physical_ability("Bite", tier, rng),
             generate_physical_ability("Punch", tier, rng),
@@ -112,7 +116,7 @@ fn generate_stat_value(min: f32, max: f32, tier: u8, rng: &mut StdRng, inverse: 
 
 fn generate_physical_ability(name: &'static str, tier: u8, rng: &mut StdRng) -> PhysicalAbility {
     PhysicalAbility {
-        name: name,
+        _name: name,
         stamina_cost: generate_stat_value(
             MIN_PHYS_STAMINA_COST,
             MAX_PHYS_STAMINA_COST,

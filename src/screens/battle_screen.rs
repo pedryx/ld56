@@ -1,8 +1,18 @@
+use core::f32;
+
+use bevior_tree::{
+    node::NodeResult,
+    prelude::{delegate_node, ConditionalLoop, Sequence},
+    task::{TaskBridge, TaskStatus},
+    BehaviorTreeBundle, BehaviorTreePlugin,
+};
 use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
-    creature::{create_creature, CreatureStats, GenerateCreatureRng, PopulationSize},
+    creature::{
+        create_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
+    },
     loading::TextureAssets,
     GameState, WINDOW_SIZE,
 };
@@ -11,6 +21,7 @@ use super::new_creature_screen::PlayerCreature;
 
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 0.5;
+const MELEE_DISTANCE: f32 = 32.0;
 
 const ENEMY_CREATURE_TIER: u8 = 1;
 const ENEMY_CREATURE_COUNT: u8 = 1;
@@ -19,7 +30,9 @@ pub struct BattleScreenPlugin;
 
 impl Plugin for BattleScreenPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(CreaturePositionRng(StdRng::from_entropy()))
+        app.add_plugins(BehaviorTreePlugin::default())
+            .insert_resource(CreaturePositionRng(StdRng::from_entropy()))
+            .insert_resource(AttackRng(StdRng::from_entropy()))
             .add_systems(
                 OnEnter(GameState::Battle),
                 (
@@ -29,7 +42,19 @@ impl Plugin for BattleScreenPlugin {
                 )
                     .chain(),
             )
-            .add_systems(OnExit(GameState::NewCreature), cleanup);
+            .add_systems(OnExit(GameState::NewCreature), cleanup)
+            .add_systems(
+                Update,
+                (
+                    find_nearest_enemy,
+                    go_to_nearest_enemy,
+                    stats_recovery,
+                    attack_enemy,
+                    death_system,
+                )
+                    .chain()
+                    .run_if(in_state(GameState::Battle)),
+            );
     }
 }
 
@@ -39,8 +64,41 @@ struct BattleScreenItem;
 #[derive(Component)]
 struct BattleCreature {
     template: Entity,
-    is_enemy: bool,
+    movement_speed: f32,
+    stamina_regen: f32,
+    max_stamina: f32,
+    physical_abilities: Vec<PhysicalAbility>,
 }
+
+#[derive(Component, Clone)]
+struct BattleCreatureStats {
+    hp: f32,
+    stamina: f32,
+    cooldown: f32,
+}
+
+#[derive(Component)]
+struct Enemy;
+
+#[derive(Component)]
+struct BehaviorTreeContext {
+    nearest_enemy_pos: Vec2,
+    distance_squared_to_nearest_enemy: f32,
+    nearest_enemy: Option<Entity>,
+}
+
+impl Default for BehaviorTreeContext {
+    fn default() -> Self {
+        Self {
+            nearest_enemy_pos: Default::default(),
+            distance_squared_to_nearest_enemy: f32::INFINITY,
+            nearest_enemy: Default::default(),
+        }
+    }
+}
+
+#[derive(Resource)]
+struct AttackRng(StdRng);
 
 #[derive(Resource)]
 struct CreaturePositionRng(StdRng);
@@ -65,25 +123,37 @@ fn create_population(
             position.x *= -1.0;
         }
 
-        commands
-            .spawn((
-                SpriteBundle {
-                    transform: Transform::from_translation(position)
-                        .with_scale(Vec2::splat(CREATURE_SCALE).extend(1.0)),
-                    texture: texture.clone(),
-                    sprite: Sprite {
-                        flip_x: is_enemy,
-                        ..default()
-                    },
+        let mut entity = commands.spawn((
+            SpriteBundle {
+                transform: Transform::from_translation(position)
+                    .with_scale(Vec2::splat(CREATURE_SCALE).extend(1.0)),
+                texture: texture.clone(),
+                sprite: Sprite {
+                    flip_x: is_enemy,
                     ..default()
                 },
-                BattleCreature {
-                    template: entity,
-                    is_enemy,
-                },
-                BattleScreenItem,
-            ))
-            .insert(stats.clone());
+                ..default()
+            },
+            BattleCreature {
+                template: entity,
+                movement_speed: stats.movement_speed,
+                physical_abilities: stats.physical_abilities.clone(),
+                max_stamina: stats.stamina,
+                stamina_regen: stats.stamina_regen,
+            },
+            BattleCreatureStats {
+                hp: stats.hp,
+                stamina: stats.stamina,
+                cooldown: 0.0,
+            },
+            BattleScreenItem,
+            BehaviorTreeContext::default(),
+            create_melee_behavior_tree(),
+        ));
+
+        if is_enemy {
+            entity.insert(Enemy);
+        }
     }
 }
 
@@ -156,5 +226,214 @@ fn setup_enemy_creatures(
 fn cleanup(mut commands: Commands, query: Query<Entity, With<BattleScreenItem>>) {
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn find_nearest_enemy(
+    mut ally_query: Query<
+        (Entity, &mut BehaviorTreeContext, &Transform),
+        (With<BattleCreature>, Without<Enemy>),
+    >,
+    mut enemy_query: Query<
+        (Entity, &mut BehaviorTreeContext, &Transform),
+        (With<BattleCreature>, With<Enemy>),
+    >,
+) {
+    for (_, mut context, ally_transform) in ally_query.iter_mut() {
+        let position = ally_transform.translation.xy();
+        context.distance_squared_to_nearest_enemy = f32::INFINITY;
+
+        for (entity, _, enemy_transform) in enemy_query.iter() {
+            let distance_squared = position.distance_squared(enemy_transform.translation.xy());
+
+            if distance_squared < context.distance_squared_to_nearest_enemy {
+                context.distance_squared_to_nearest_enemy = distance_squared;
+                context.nearest_enemy_pos = enemy_transform.translation.xy();
+                context.nearest_enemy = Some(entity);
+            }
+        }
+    }
+
+    for (_, mut context, enemy_transform) in enemy_query.iter_mut() {
+        let position = enemy_transform.translation.xy();
+        for (entity, _, ally_transform) in ally_query.iter() {
+            let distance_squared = position.distance_squared(ally_transform.translation.xy());
+
+            if distance_squared < context.distance_squared_to_nearest_enemy {
+                context.distance_squared_to_nearest_enemy = distance_squared;
+                context.nearest_enemy_pos = ally_transform.translation.xy();
+                context.nearest_enemy = Some(entity);
+            }
+        }
+    }
+}
+
+fn create_melee_behavior_tree() -> BehaviorTreeBundle {
+    BehaviorTreeBundle::from_root(ConditionalLoop::new(
+        Sequence::new(vec![
+            Box::new(GoToNearestEnemyTask::new()),
+            Box::new(AttackEnemyTask::new()),
+        ]),
+        |In(_)| true,
+    ))
+}
+
+#[delegate_node(delegate)]
+struct GoToNearestEnemyTask {
+    delegate: TaskBridge,
+}
+
+impl GoToNearestEnemyTask {
+    pub fn new() -> Self {
+        let checker = move |In(entity): In<Entity>, param: Query<&BehaviorTreeContext>| {
+            let context = param.get(entity).unwrap();
+            let distance_squared = context.distance_squared_to_nearest_enemy;
+
+            //println!("going - distance {}", distance_squared);
+
+            match distance_squared <= MELEE_DISTANCE * MELEE_DISTANCE
+                && param.get(context.nearest_enemy.unwrap()).is_ok()
+            {
+                true => TaskStatus::Complete(NodeResult::Success),
+                false => TaskStatus::Running,
+            }
+        };
+        let task = TaskBridge::new(checker).insert_while_running(GoToNearestEnemy);
+
+        Self { delegate: task }
+    }
+}
+
+#[derive(Clone, Component, Reflect)]
+#[component(storage = "SparseSet")]
+struct GoToNearestEnemy;
+
+fn go_to_nearest_enemy(
+    mut query: Query<
+        (&mut Transform, &BehaviorTreeContext, &BattleCreature),
+        With<GoToNearestEnemy>,
+    >,
+    entity_query: Query<Entity>,
+    time: Res<Time>,
+) {
+    for (mut transform, context, creature) in query.iter_mut() {
+        if entity_query.get(context.nearest_enemy.unwrap()).is_err() {
+            continue;
+        }
+
+        let pos = transform.translation.xy();
+
+        transform.translation += ((context.nearest_enemy_pos - pos).normalize_or_zero()
+            * creature.movement_speed
+            * time.delta_seconds())
+        .extend(0.0);
+    }
+}
+
+#[delegate_node(delegate)]
+struct AttackEnemyTask {
+    delegate: TaskBridge,
+}
+
+impl AttackEnemyTask {
+    pub fn new() -> Self {
+        let checker = move |In(entity): In<Entity>, param: Query<&BehaviorTreeContext>| {
+            let context = param.get(entity);
+
+            if context.is_err() {
+                return TaskStatus::Complete(NodeResult::Success);
+            }
+            let context = context.unwrap();
+
+            match context.distance_squared_to_nearest_enemy <= MELEE_DISTANCE * MELEE_DISTANCE
+                && param.get(context.nearest_enemy.unwrap()).is_ok()
+            {
+                true => TaskStatus::Running,
+                false => TaskStatus::Complete(NodeResult::Success),
+            }
+        };
+        let task = TaskBridge::new(checker).insert_while_running(AttackEnemy);
+
+        Self { delegate: task }
+    }
+}
+
+#[derive(Clone, Component, Reflect)]
+#[component(storage = "SparseSet")]
+struct AttackEnemy;
+
+fn attack_enemy(
+    attacker_query: Query<(Entity, &BattleCreature, &BehaviorTreeContext), With<AttackEnemy>>,
+    mut stats_query: Query<&mut BattleCreatureStats>,
+    mut attack_rng: ResMut<AttackRng>,
+) {
+    for (entity, creature, context) in attacker_query.iter() {
+        let mut stats = stats_query.get_mut(entity).unwrap().clone();
+        if stats.cooldown > 0.0 {
+            continue;
+        }
+
+        let abilities = creature
+            .physical_abilities
+            .iter()
+            .filter(|ability| ability.stamina_cost <= stats.stamina)
+            .collect::<Vec<_>>();
+
+        if abilities.is_empty() {
+            continue;
+        }
+
+        let ability = abilities[attack_rng.0.gen_range(0..abilities.len())];
+        stats.stamina -= ability.stamina_cost;
+        stats.cooldown = ability.global_cooldown;
+
+        if let Ok(mut target_stats) = stats_query.get_mut(context.nearest_enemy.unwrap()) {
+            target_stats.hp -= ability.damage;
+        } else {
+            continue;
+        }
+
+        println!("getting attack, reaming hp: {}", stats.hp);
+
+        *stats_query.get_mut(entity).unwrap() = stats;
+
+        // if let Ok(mut entity_stats) = stats_query.get_mut(entity) {
+        //     *entity_stats = stats;
+        // }
+    }
+}
+
+fn death_system(
+    mut commands: Commands,
+    hp_query: Query<(Entity, &BattleCreature, &BattleCreatureStats)>,
+    mut population_query: Query<&mut PopulationSize>,
+) {
+    let mut entities_to_die = Vec::new();
+
+    for (entity, creature, stats) in hp_query.iter() {
+        if stats.hp <= 0.0 {
+            let mut population = population_query.get_mut(creature.template).unwrap();
+            population.0 -= 1;
+
+            entities_to_die.push(entity);
+        }
+    }
+
+    for entity in entities_to_die {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+fn stats_recovery(mut query: Query<(&mut BattleCreatureStats, &BattleCreature)>, time: Res<Time>) {
+    for (mut stats, creature) in query.iter_mut() {
+        stats.cooldown -= time.delta_seconds();
+        if stats.cooldown < 0.0 {
+            stats.cooldown = 0.0;
+        }
+
+        stats.stamina += creature.stamina_regen * time.delta_seconds();
+        if stats.stamina > creature.max_stamina {
+            stats.stamina = creature.max_stamina;
+        }
     }
 }
