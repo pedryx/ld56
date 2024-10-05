@@ -50,7 +50,7 @@ fn spawn_creature(
     let tier = generate_creature_eng
         .0
         .gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
-    let entity = create_creature(&mut commands, &mut generate_creature_eng.0, textures, tier);
+    let entity = create_creature(&mut commands, &mut generate_creature_eng.0, &textures, tier);
 
     commands.entity(entity).insert(PlayerCreature);
 }

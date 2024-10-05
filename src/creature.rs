@@ -28,7 +28,7 @@ impl Plugin for CreaturePlugin {
 pub struct PopulationSize(pub u32);
 
 #[derive(Component, Debug, Clone)]
-pub struct Creature {
+pub struct CreatureStats {
     pub movement_speed: f32,
     pub hp: f32,
     pub stamina: f32,
@@ -49,10 +49,10 @@ pub struct GenerateCreatureRng(pub StdRng);
 pub fn create_creature(
     commands: &mut Commands,
     rng: &mut StdRng,
-    textures: Res<TextureAssets>,
+    textures: &Res<TextureAssets>,
     tier: u8,
 ) -> Entity {
-    let creature = Creature {
+    let creature = CreatureStats {
         movement_speed: generate_stat_value(MIN_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED, tier, rng),
         hp: generate_stat_value(MIN_HP, MAX_HP, tier, rng),
         stamina: generate_stat_value(MIN_STAMINA, MAX_STAMINA, tier, rng),
@@ -68,6 +68,7 @@ pub fn create_creature(
     commands
         .spawn(SpriteBundle {
             texture: textures.creature.clone(),
+            visibility: Visibility::Hidden,
             ..default()
         })
         .insert(creature)
