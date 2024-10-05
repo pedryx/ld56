@@ -1,6 +1,16 @@
 use bevy::prelude::*;
 
+use crate::GameState;
+
 const BUTTON_SIZE: Vec2 = Vec2::new(160.0, 64.0);
+
+pub struct UIPlugin;
+
+impl Plugin for UIPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Update, (handle_button_hover, handle_change_state_buttons));
+    }
+}
 
 #[derive(Component)]
 struct ButtonColors {
@@ -17,12 +27,17 @@ impl Default for ButtonColors {
     }
 }
 
-pub struct UIPlugin;
+#[derive(Component)]
+pub struct ChangeState(GameState);
 
-impl Plugin for UIPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Update, handle_button_hover);
-    }
+pub fn create_change_state_button(
+    commands: &mut Commands,
+    title: &'static str,
+    pos: Vec2,
+    game_state: GameState,
+) -> Entity {
+    let entity = create_button(commands, title, pos);
+    commands.entity(entity).insert(ChangeState(game_state)).id()
 }
 
 pub fn create_button(commands: &mut Commands, title: &'static str, pos: Vec2) -> Entity {
@@ -76,6 +91,17 @@ fn handle_button_hover(
                 *color = button_colors.normal.into();
             }
             _ => {}
+        }
+    }
+}
+
+fn handle_change_state_buttons(
+    mut next_state: ResMut<NextState<GameState>>,
+    query: Query<(&Interaction, &ChangeState), (Changed<Interaction>, With<Button>)>,
+) {
+    for (&interaction, ChangeState(state)) in query.iter() {
+        if interaction == Interaction::Pressed {
+            next_state.set(state.clone());
         }
     }
 }

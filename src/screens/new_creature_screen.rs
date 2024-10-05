@@ -4,8 +4,7 @@ use rand::Rng;
 use crate::{
     creature::{create_creature, GenerateCreatureRng},
     loading::TextureAssets,
-    player::PlayerCreatures,
-    ui::create_button,
+    ui::create_change_state_button,
     GameState, WINDOW_SIZE,
 };
 
@@ -15,7 +14,10 @@ const MAX_CREATURE_TIER: u8 = 3;
 pub struct NewCreatureScreenPlugin;
 
 #[derive(Component)]
-pub struct NewCreatureScreenItem;
+pub struct PlayerCreature;
+
+#[derive(Component)]
+struct NewCreatureScreenItem;
 
 impl Plugin for NewCreatureScreenPlugin {
     fn build(&self, app: &mut App) {
@@ -25,7 +27,12 @@ impl Plugin for NewCreatureScreenPlugin {
 }
 
 fn setup_ui(mut commands: Commands) {
-    let button = create_button(&mut commands, "Continue", WINDOW_SIZE * Vec2::new(0.5, 0.9));
+    let button = create_change_state_button(
+        &mut commands,
+        "Continue",
+        WINDOW_SIZE * Vec2::new(0.5, 0.9),
+        GameState::Battle,
+    );
     commands.entity(button).insert(NewCreatureScreenItem);
 }
 
@@ -39,10 +46,11 @@ fn spawn_creature(
     mut commands: Commands,
     mut generate_creature_eng: ResMut<GenerateCreatureRng>,
     textures: Res<TextureAssets>,
-    mut player_creatures: ResMut<PlayerCreatures>,
 ) {
-    let tier = generate_creature_eng.0.gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
+    let tier = generate_creature_eng
+        .0
+        .gen_range(MIN_CREATURE_TIER..=MAX_CREATURE_TIER);
     let entity = create_creature(&mut commands, &mut generate_creature_eng.0, textures, tier);
 
-    player_creatures.0.push(entity);
+    commands.entity(entity).insert(PlayerCreature);
 }

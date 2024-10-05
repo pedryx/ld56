@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal};
 
 use crate::loading::TextureAssets;
@@ -13,6 +13,9 @@ const MAX_HP: f32 = 250.0;
 const MIN_STAMINA: f32 = 50.0;
 const MAX_STAMINA: f32 = 250.0;
 
+const MIN_POPULATION: u32 = 5;
+const MAX_POPULATION: u32 = 15;
+
 pub struct CreaturePlugin;
 
 impl Plugin for CreaturePlugin {
@@ -21,7 +24,10 @@ impl Plugin for CreaturePlugin {
     }
 }
 
-#[derive(Component, Debug)]
+#[derive(Component)]
+pub struct PopulationSize(pub u32);
+
+#[derive(Component, Debug, Clone)]
 pub struct Creature {
     pub movement_speed: f32,
     pub hp: f32,
@@ -29,7 +35,7 @@ pub struct Creature {
     pub physical_abilities: Vec<PhysicalAbility>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PhysicalAbility {
     pub name: &'static str,
     pub stamina_cost: f32,
@@ -52,8 +58,12 @@ pub fn create_creature(
         stamina: generate_stat_value(MIN_STAMINA, MAX_STAMINA, tier, rng),
         physical_abilities: Vec::new(),
     };
+    let population = PopulationSize(rng.gen_range(MIN_POPULATION..=MAX_POPULATION));
 
-    info!("player creature: {:?}", creature);
+    info!(
+        "generate creature of population {:?}: {:?}",
+        population.0, creature
+    );
 
     commands
         .spawn(SpriteBundle {
@@ -61,6 +71,7 @@ pub fn create_creature(
             ..default()
         })
         .insert(creature)
+        .insert(population)
         .id()
 }
 
