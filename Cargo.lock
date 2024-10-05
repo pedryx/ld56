@@ -308,6 +308,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "bevior_tree"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3c537b71bc1f38b259d488c62b443a67cd14eeaeef830cb126f064b25ea80571"
+dependencies = [
+ "bevy",
+ "derive-nodestate",
+ "macro-delegatenode",
+ "macro-withstate",
+ "ordered-float",
+ "rand",
+]
+
+[[package]]
 name = "bevy"
 version = "0.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -581,6 +595,7 @@ dependencies = [
 name = "bevy_game"
 version = "0.1.0"
 dependencies = [
+ "bevior_tree",
  "bevy",
  "bevy_asset_loader",
  "bevy_kira_audio",
@@ -1608,6 +1623,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7e962a19be5cfc3f3bf6dd8f61eb50107f356ad6270fbb3ed41476571db78be5"
 
 [[package]]
+name = "derive-nodestate"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "287b577b0f524408b99a5edfee94c839ee6f69a0399de8e80ee4073800423481"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.58",
+]
+
+[[package]]
 name = "dispatch"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2452,6 +2478,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "macro-delegatenode"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2ff640947f8e2d88480a98d5d8c526c96d7c83a1158ad6fdd0ca81036a5d84c"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.58",
+]
+
+[[package]]
+name = "macro-withstate"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e060584425faee4acff31e3ae2efdc3846c6c722d3b48b5d0907a827b09ef034"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.58",
+]
+
+[[package]]
 name = "malloc_buf"
 version = "0.0.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2944,6 +2992,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52f0d54bde9774d3a51dcf281a5def240c71996bc6ca05d2c847ec8b2b216166"
 dependencies = [
  "libredox",
+]
+
+[[package]]
+name = "ordered-float"
+version = "4.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "44d501f1a72f71d3c063a6bbc8f7271fa73aa09fe5d6283b6571e2ed176a2537"
+dependencies = [
+ "num-traits",
 ]
 
 [[package]]

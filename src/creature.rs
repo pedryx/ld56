@@ -40,7 +40,7 @@ pub struct PhysicalAbility {
     pub name: &'static str,
     pub stamina_cost: f32,
     pub damage: f32,
-    pub stun: f32,
+    pub global_cooldown: f32,
 }
 
 #[derive(Resource)]
