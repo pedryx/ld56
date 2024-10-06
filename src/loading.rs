@@ -26,4 +26,6 @@ pub struct TextureAssets {
     pub github: Handle<Image>,
     #[asset(path = "textures/body_parts.png")]
     pub body_parts: Handle<Image>,
+    #[asset(path = "textures/damaged.png")]
+    pub damaged: Handle<Image>,
 }

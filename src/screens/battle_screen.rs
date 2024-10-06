@@ -24,6 +24,8 @@ use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 1.0;
 const MELEE_DISTANCE: f32 = 32.0;
+const DAMAGE_EFFECT_DURATION: f32 = 0.1;
+const DAMAGE_EFFECT_Z: f32 = 40.0;
 
 pub struct BattleScreenPlugin;
 
@@ -32,6 +34,7 @@ impl Plugin for BattleScreenPlugin {
         app.add_plugins(BehaviorTreePlugin::default())
             .insert_resource(CreaturePositionRng(StdRng::from_entropy()))
             .insert_resource(AttackRng(StdRng::from_entropy()))
+            .add_event::<DamageTakenEvent>()
             .add_systems(
                 OnEnter(GameState::Battle),
                 (
@@ -49,6 +52,7 @@ impl Plugin for BattleScreenPlugin {
                     go_to_nearest_enemy,
                     stats_recovery,
                     attack_enemy,
+                    handle_damage_effect,
                     death_system,
                     handle_battle_over,
                 )
@@ -56,6 +60,14 @@ impl Plugin for BattleScreenPlugin {
                     .run_if(in_state(GameState::Battle)),
             );
     }
+}
+
+#[derive(Event)]
+struct DamageTakenEvent(Entity);
+
+#[derive(Component, Default)]
+struct DamageEffect {
+    elapsed: f32,
 }
 
 #[derive(Component)]
@@ -385,11 +397,13 @@ struct AttackEnemy;
 
 fn attack_enemy(
     attacker_query: Query<(Entity, &BattleCreature, &BehaviorTreeContext), With<AttackEnemy>>,
-    mut stats_query: Query<&mut BattleCreatureStats>,
+    mut stats_query: Query<(Entity, &mut BattleCreatureStats)>,
     mut attack_rng: ResMut<AttackRng>,
+    mut ew_damage_taken: EventWriter<DamageTakenEvent>,
 ) {
     for (entity, creature, context) in attacker_query.iter() {
-        let mut stats = stats_query.get_mut(entity).unwrap().clone();
+        let (_, stats) = stats_query.get_mut(entity).unwrap();
+        let mut stats = stats.clone();
         if stats.cooldown > 0.0 {
             continue;
         }
@@ -408,13 +422,15 @@ fn attack_enemy(
         stats.stamina -= ability.stamina_cost;
         stats.cooldown = ability.global_cooldown;
 
-        if let Ok(mut target_stats) = stats_query.get_mut(context.nearest_enemy.unwrap()) {
+        if let Ok((entity, mut target_stats)) = stats_query.get_mut(context.nearest_enemy.unwrap())
+        {
             target_stats.hp -= ability.damage;
+            ew_damage_taken.send(DamageTakenEvent(entity));
         } else {
             continue;
         }
 
-        *stats_query.get_mut(entity).unwrap() = stats;
+        *stats_query.get_mut(entity).unwrap().1 = stats;
     }
 }
 
@@ -473,4 +489,51 @@ fn handle_battle_over(
     }
 
     // TODO: victory on last stage if no infinity mode
+}
+
+fn handle_damage_effect(
+    mut commands: Commands,
+    entity_query: Query<&Children>,
+    enemy_query: Query<&Enemy>,
+    mut effect_query: Query<(Entity, &mut DamageEffect)>,
+    mut er_damage_taken: EventReader<DamageTakenEvent>,
+    textures: Res<TextureAssets>,
+    time: Res<Time>,
+) {
+    for &DamageTakenEvent(creature_entity) in er_damage_taken.read() {
+        let children = entity_query
+            .get(creature_entity)
+            .unwrap()
+            .iter()
+            .find(|&&c| effect_query.get(c).is_ok());
+
+        if let Some(effect_entity) = children {
+            let (_, mut effect) = effect_query.get_mut(*effect_entity).unwrap();
+            effect.elapsed = DAMAGE_EFFECT_DURATION;
+        } else {
+            commands.entity(creature_entity).with_children(|children| {
+                children.spawn((
+                    SpriteBundle {
+                        texture: textures.damaged.clone(),
+                        transform: Transform::from_xyz(0.0, 0.0, DAMAGE_EFFECT_Z),
+                        sprite: Sprite {
+                            flip_x: enemy_query.get(creature_entity).is_ok(),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    DamageEffect {
+                        elapsed: DAMAGE_EFFECT_DURATION,
+                    },
+                ));
+            });
+        }
+    }
+
+    for (creature_entity, mut effect) in effect_query.iter_mut() {
+        effect.elapsed -= time.delta_seconds();
+        if effect.elapsed <= 0.0 {
+            commands.entity(creature_entity).despawn_recursive();
+        }
+    }
 }
