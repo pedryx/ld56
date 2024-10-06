@@ -1,4 +1,5 @@
 use core::f32;
+use std::f32::consts::PI;
 
 use bevior_tree::{
     node::NodeResult,
@@ -22,10 +23,12 @@ use crate::{
 use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
 
 const CREATURE_Z: f32 = 1.0;
-const CREATURE_SCALE: f32 = 1.0;
+const CREATURE_SCALE: f32 = 1.3;
 const MELEE_DISTANCE: f32 = 32.0;
 const DAMAGE_EFFECT_DURATION: f32 = 0.1;
 const DAMAGE_EFFECT_Z: f32 = 40.0;
+const BACKGROUND_Z: f32 = -20.0;
+const BLOOD_PUDDLE_Z: f32 = -10.0;
 
 pub struct BattleScreenPlugin;
 
@@ -34,15 +37,20 @@ impl Plugin for BattleScreenPlugin {
         app.add_plugins(BehaviorTreePlugin::default())
             .insert_resource(CreaturePositionRng(StdRng::from_entropy()))
             .insert_resource(AttackRng(StdRng::from_entropy()))
+            .insert_resource(BattleVisualsRng(StdRng::from_entropy()))
             .add_event::<DamageTakenEvent>()
+            .add_event::<CreatureDieEvent>()
             .add_systems(
                 OnEnter(GameState::Battle),
                 (
-                    setup_player_creatures,
-                    generate_enemy_creatures,
-                    setup_enemy_creatures,
-                )
-                    .chain(),
+                    (
+                        setup_player_creatures,
+                        generate_enemy_creatures,
+                        setup_enemy_creatures,
+                    )
+                        .chain(),
+                    setup_environment,
+                ),
             )
             .add_systems(OnExit(GameState::Battle), cleanup)
             .add_systems(
@@ -54,6 +62,7 @@ impl Plugin for BattleScreenPlugin {
                     attack_enemy,
                     handle_damage_effect,
                     death_system,
+                    spawn_blood_puddle,
                     handle_battle_over,
                 )
                     .chain()
@@ -62,8 +71,16 @@ impl Plugin for BattleScreenPlugin {
     }
 }
 
+#[derive(Resource)]
+struct BattleVisualsRng(StdRng);
+
 #[derive(Event)]
 struct DamageTakenEvent(Entity);
+
+#[derive(Event)]
+struct CreatureDieEvent {
+    pos: Vec2,
+}
 
 #[derive(Component, Default)]
 struct DamageEffect {
@@ -114,6 +131,17 @@ struct AttackRng(StdRng);
 
 #[derive(Resource)]
 struct CreaturePositionRng(StdRng);
+
+fn setup_environment(mut commands: Commands, textures: Res<TextureAssets>) {
+    commands.spawn((
+        SpriteBundle {
+            texture: textures.battle_background.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
+            ..default()
+        },
+        BattleScreenItem,
+    ));
+}
 
 fn create_population(
     commands: &mut Commands,
@@ -436,17 +464,21 @@ fn attack_enemy(
 
 fn death_system(
     mut commands: Commands,
-    hp_query: Query<(Entity, &BattleCreature, &BattleCreatureStats)>,
+    hp_query: Query<(Entity, &BattleCreature, &BattleCreatureStats, &Transform)>,
     mut population_query: Query<&mut PopulationSize>,
+    mut ew_creature_die: EventWriter<CreatureDieEvent>,
 ) {
     let mut entities_to_die = Vec::new();
 
-    for (entity, creature, stats) in hp_query.iter() {
+    for (entity, creature, stats, transform) in hp_query.iter() {
         if stats.hp <= 0.0 {
             let mut population = population_query.get_mut(creature.template).unwrap();
             population.0 -= 1;
 
             entities_to_die.push(entity);
+            ew_creature_die.send(CreatureDieEvent {
+                pos: transform.translation.xy(),
+            });
         }
     }
 
@@ -535,5 +567,32 @@ fn handle_damage_effect(
         if effect.elapsed <= 0.0 {
             commands.entity(creature_entity).despawn_recursive();
         }
+    }
+}
+
+fn spawn_blood_puddle(
+    mut commands: Commands,
+    mut er_creature_die: EventReader<CreatureDieEvent>,
+    textures: Res<TextureAssets>,
+    mut battle_visuals_rng: ResMut<BattleVisualsRng>,
+) {
+    for event in er_creature_die.read() {
+        let pos = battle_visuals_rng.0.gen_range(0..5) as f32 * Vec2::X * Vec2::splat(64.0);
+
+        commands.spawn((
+            SpriteBundle {
+                texture: textures.blood.clone(),
+                sprite: Sprite {
+                    rect: Some(Rect::from_corners(pos, pos + Vec2::splat(64.0))),
+                    ..default()
+                },
+                transform: Transform::from_translation(event.pos.extend(BLOOD_PUDDLE_Z))
+                    .with_rotation(Quat::from_rotation_z(
+                        battle_visuals_rng.0.gen_range(0.0..2.0 * PI),
+                    )),
+                ..default()
+            },
+            BattleScreenItem,
+        ));
     }
 }

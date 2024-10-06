@@ -28,4 +28,8 @@ pub struct TextureAssets {
     pub body_parts: Handle<Image>,
     #[asset(path = "textures/damaged.png")]
     pub damaged: Handle<Image>,
+    #[asset(path = "textures/battle_background.png")]
+    pub battle_background: Handle<Image>,
+    #[asset(path = "textures/blood.png")]
+    pub blood: Handle<Image>,
 }
