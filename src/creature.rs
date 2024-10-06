@@ -25,6 +25,8 @@ const MAX_PHYS_COOLDOWN: f32 = 2.0;
 const MIN_POPULATION: u32 = 5;
 const MAX_POPULATION: u32 = 15;
 
+const MUTATION_CHANCE: f64 = 0.25;
+
 pub const CREATURE_Z: f32 = 10.0;
 
 pub struct CreaturePlugin;
@@ -51,6 +53,35 @@ pub struct CreatureStats {
     pub stamina_regen: f32,
     pub _generation: u64,
     pub physical_abilities: Vec<PhysicalAbility>,
+}
+
+impl CreatureStats {
+    pub fn mutate(&mut self, rng: &mut StdRng) {
+        self.movement_speed +=
+            Self::get_mutation_change(rng, MIN_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED);
+        self.hp += Self::get_mutation_change(rng, MIN_HP, MAX_HP);
+        self.stamina += Self::get_mutation_change(rng, MIN_STAMINA, MAX_STAMINA);
+        self.stamina_regen += Self::get_mutation_change(rng, MIN_STAMINA_REGEN, MAX_STAMINA_REGEN);
+
+        for ability in self.physical_abilities.iter_mut() {
+            ability.damage += Self::get_mutation_change(rng, MIN_PHYS_DMG, MAX_PHYS_DMG);
+            ability.stamina_cost +=
+                Self::get_mutation_change(rng, MIN_PHYS_STAMINA_COST, MAX_PHYS_STAMINA_COST);
+            ability.global_cooldown +=
+                Self::get_mutation_change(rng, MIN_PHYS_COOLDOWN, MAX_PHYS_COOLDOWN);
+        }
+    }
+
+    fn get_mutation_change(rng: &mut StdRng, min: f32, max: f32) -> f32 {
+        if !rng.gen_bool(MUTATION_CHANCE) {
+            return 0.0;
+        }
+
+        let range_width = max - min;
+        let subrange_width = range_width / NUM_TIERS as f32;
+
+        (rng.gen_range(-1.5..=1.5) * subrange_width).max(min)
+    }
 }
 
 #[derive(Debug, Clone)]

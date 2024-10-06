@@ -425,6 +425,8 @@ fn combine_creatures(
             }
         }
 
+        children.mutate(&mut combination_rng.0);
+
         commands
             .spawn((
                 SpriteBundle {
