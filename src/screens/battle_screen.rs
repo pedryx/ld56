@@ -14,7 +14,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use crate::{
     audio::{Soundtracks, SOUND_EFFECTS_GLOBAL_VOLUME},
     creature::{
-        generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationChangedEvent, PopulationSize
+        generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility,
+        PopulationChangedEvent, PopulationSize,
     },
     loading::{AudioAssets, TextureAssets},
     rounds::{Difficulty, GameSettings, Round, RoundOverEvent},

@@ -1,6 +1,7 @@
 use bevy::{
     prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::HashMap,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    utils::HashMap,
 };
 use bevy_kira_audio::{Audio, AudioControl};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -8,7 +9,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use crate::{
     audio::SOUND_EFFECTS_GLOBAL_VOLUME,
     creature::{
-        generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng, PopulationChangedEvent, PopulationSize, CREATURE_SCALE, CREATURE_Z
+        generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng,
+        PopulationChangedEvent, PopulationSize, CREATURE_SCALE, CREATURE_Z,
     },
     loading::{AudioAssets, TextureAssets},
     rounds::{GameStartedEvent, Round},
@@ -341,11 +343,23 @@ fn setup_ui(
         CreatureManagerScreenItem,
     ));
 
-    let mut generations = query.iter().map(|(_, _, _, _, stats)| stats.generation).collect::<Vec<_>>();
+    let mut generations = query
+        .iter()
+        .filter(|(_, _, _, &PopulationSize(size), _)| size > 0)
+        .map(|(_, _, _, _, stats)| stats.generation)
+        .collect::<Vec<_>>();
     generations.sort();
-    let order = generations.iter().enumerate().map(|(i, g)| (g, i)).collect::<HashMap<_, _>>();
+    let order = generations
+        .iter()
+        .enumerate()
+        .map(|(i, g)| (g, i))
+        .collect::<HashMap<_, _>>();
 
     for (entity, mut visibility, mut transform, &PopulationSize(count), stats) in query.iter_mut() {
+        if count == 0 {
+            continue;
+        }
+
         *visibility = Visibility::Visible;
 
         let i = order[&stats.generation];
