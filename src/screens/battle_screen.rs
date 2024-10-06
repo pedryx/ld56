@@ -588,7 +588,7 @@ fn handle_battle_over(
     } else if enemy_query.is_empty() {
         round.0 += 1;
 
-        if round.0 == 21 && !game_settings.infinity_mode_on {
+        if round.0 == 11 && !game_settings.infinity_mode_on {
             next_game_state.set(GameState::GameOver(GameResult::Victory));
             return;
         }
