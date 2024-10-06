@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle}, utils::HashMap,
 };
 use bevy_kira_audio::{Audio, AudioControl};
 use rand::{rngs::StdRng, Rng, SeedableRng};
@@ -341,11 +341,16 @@ fn setup_ui(
         CreatureManagerScreenItem,
     ));
 
-    let mut x = 0;
-    let mut y = 0;
+    let mut generations = query.iter().map(|(_, _, _, _, stats)| stats.generation).collect::<Vec<_>>();
+    generations.sort();
+    let order = generations.iter().enumerate().map(|(i, g)| (g, i)).collect::<HashMap<_, _>>();
 
-    for (entity, mut visibility, mut transform, &PopulationSize(count), _) in query.iter_mut() {
+    for (entity, mut visibility, mut transform, &PopulationSize(count), stats) in query.iter_mut() {
         *visibility = Visibility::Visible;
+
+        let i = order[&stats.generation];
+        let x = i % (GRID_SIZE.x as usize - 2);
+        let y = i / (GRID_SIZE.x as usize - 2);
 
         let grid_pos = Vec2::new(x as f32 + 0.5, y as f32 + 0.4);
         let cell_size = Vec2::new(WINDOW_SIZE.x, WINDOW_SIZE.y * 3.0 / 4.0) / GRID_SIZE;
@@ -394,15 +399,6 @@ fn setup_ui(
             },
             CreatureManagerScreenItem,
         ));
-
-        x += 1;
-        if x >= (GRID_SIZE.x - 2.0) as u32 {
-            x = 0;
-            y += 1;
-            if y >= GRID_SIZE.y as u32 {
-                break;
-            }
-        }
     }
 
     let button = create_change_state_button(
@@ -634,7 +630,7 @@ fn combine_creatures(
                 parent2.stamina_regen
             },
             physical_abilities: Vec::new(),
-            _generation: creature_generation.0,
+            generation: creature_generation.0,
         };
         creature_generation.0 += 1;
         // There are always 3 physical abilities.

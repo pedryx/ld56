@@ -66,7 +66,7 @@ pub struct CreatureStats {
     pub hp: f32,
     pub stamina: f32,
     pub stamina_regen: f32,
-    pub _generation: u64,
+    pub generation: u64,
     pub physical_abilities: Vec<PhysicalAbility>,
 }
 
@@ -134,7 +134,7 @@ pub fn generate_creature(
             generate_physical_ability("Punch", tier, rng),
             generate_physical_ability("Kick", tier, rng),
         ],
-        _generation: generation,
+        generation,
     };
 
     let population = rng.gen_range(MIN_POPULATION..=MAX_POPULATION) as f32;
