@@ -64,11 +64,9 @@ impl Difficulty {
 
     fn gen_value(&mut self, mean: f32, std_dev: f32, min: f32) -> f32 {
         let normal_dist = Normal::new(mean, std_dev).unwrap();
-
         let result = normal_dist.sample(&mut self.rng);
-        let result = result.max(min);
 
-        result
+        result.max(min)
     }
 }
 

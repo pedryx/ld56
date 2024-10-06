@@ -26,6 +26,7 @@ impl Plugin for CreatureManagerScreenPlugin {
         app.init_resource::<SelectedCreaturesCounter>()
             .insert_resource(CombinationRng(StdRng::from_entropy()))
             .add_event::<CreatureCombinedEvent>()
+            .add_event::<CombineButtonPressedEvent>()
             .add_systems(
                 OnEnter(GameState::CreatureManager),
                 (generate_new_creature, setup_ui).chain(),
@@ -37,6 +38,7 @@ impl Plugin for CreatureManagerScreenPlugin {
                     handle_inc_dec_buttons,
                     handle_creature_button,
                     handle_combine_button,
+                    combine_creatures,
                 )
                     .run_if(in_state(GameState::CreatureManager)),
             )
@@ -47,6 +49,13 @@ impl Plugin for CreatureManagerScreenPlugin {
                     .run_if(on_event::<CreatureCombinedEvent>()),
             );
     }
+}
+
+#[derive(Event)]
+struct CombineButtonPressedEvent {
+    parent1: Entity,
+    parent2: Entity,
+    population: u32,
 }
 
 #[derive(Event)]
@@ -319,15 +328,11 @@ fn handle_creature_button(
 }
 
 fn handle_combine_button(
-    mut commands: Commands,
     combine_button_query: Query<&Interaction, (With<CombineButton>, Changed<Interaction>)>,
     creature_buttons_query: Query<&CreatureButton>,
     population_text_query: Query<&Text, With<PopulationText>>,
-    mut creature_query: Query<(&CreatureStats, &mut PopulationSize)>,
-    textures: Res<TextureAssets>,
-    mut combination_rng: ResMut<CombinationRng>,
-    mut ew_creature_created: EventWriter<CreatureCombinedEvent>,
-    mut creature_generation: ResMut<CreatureGeneration>,
+    mut creature_query: Query<&mut PopulationSize>,
+    mut ew_combine_button_pressed: EventWriter<CombineButtonPressedEvent>,
 ) {
     if combine_button_query.is_empty() || *combine_button_query.single() != Interaction::Pressed {
         return;
@@ -347,75 +352,93 @@ fn handle_combine_button(
         return;
     }
 
-    let mut population1 = creature_query.get_mut(entities[0]).unwrap().1;
+    let mut population1 = creature_query.get_mut(entities[0]).unwrap();
     if population1.0 < population {
         return;
     } else {
         population1.0 -= population;
     }
-    let mut population2 = creature_query.get_mut(entities[1]).unwrap().1;
+    let mut population2 = creature_query.get_mut(entities[1]).unwrap();
     if population2.0 < population {
         return;
     } else {
         population2.0 -= population;
     }
 
-    let parent1 = creature_query.get(entities[0]).unwrap().0;
-    let parent2 = creature_query.get(entities[1]).unwrap().0;
+    ew_combine_button_pressed.send(CombineButtonPressedEvent {
+        parent1: entities[0],
+        parent2: entities[1],
+        population,
+    });
+}
 
-    let mut children = CreatureStats {
-        hp: if combination_rng.0.gen_bool(0.5) {
-            parent1.hp
-        } else {
-            parent2.hp
-        },
-        movement_speed: if combination_rng.0.gen_bool(0.5) {
-            parent1.movement_speed
-        } else {
-            parent2.movement_speed
-        },
-        stamina: if combination_rng.0.gen_bool(0.5) {
-            parent1.stamina
-        } else {
-            parent2.stamina
-        },
-        stamina_regen: if combination_rng.0.gen_bool(0.5) {
-            parent1.stamina_regen
-        } else {
-            parent2.stamina_regen
-        },
-        physical_abilities: Vec::new(),
-        _generation: creature_generation.0,
-    };
+fn combine_creatures(
+    mut commands: Commands,
+    creature_query: Query<&CreatureStats>,
+    textures: Res<TextureAssets>,
+    mut combination_rng: ResMut<CombinationRng>,
+    mut creature_generation: ResMut<CreatureGeneration>,
+    mut ew_creature_created: EventWriter<CreatureCombinedEvent>,
+    mut er_combine_button_pressed: EventReader<CombineButtonPressedEvent>,
+) {
+    for event in er_combine_button_pressed.read() {
+        let parent1 = creature_query.get(event.parent1).unwrap();
+        let parent2 = creature_query.get(event.parent2).unwrap();
 
-    creature_generation.0 += 1;
-
-    // There are always 3 physical abilities.
-    for i in 0..3 {
-        if combination_rng.0.gen_bool(0.5) {
-            children
-                .physical_abilities
-                .push(parent1.physical_abilities[i].clone());
-        } else {
-            children
-                .physical_abilities
-                .push(parent2.physical_abilities[i].clone());
-        }
-    }
-
-    commands
-        .spawn((
-            SpriteBundle {
-                texture: textures.creature.clone(),
-                visibility: Visibility::Hidden,
-                transform: Transform::from_scale(Vec2::splat(1.4).extend(CREATURE_Z)),
-                ..default()
+        let mut children = CreatureStats {
+            hp: if combination_rng.0.gen_bool(0.5) {
+                parent1.hp
+            } else {
+                parent2.hp
             },
-            // Child are born in pairs.
-            PopulationSize(population * 2),
-            PlayerCreature,
-        ))
-        .insert(children);
+            movement_speed: if combination_rng.0.gen_bool(0.5) {
+                parent1.movement_speed
+            } else {
+                parent2.movement_speed
+            },
+            stamina: if combination_rng.0.gen_bool(0.5) {
+                parent1.stamina
+            } else {
+                parent2.stamina
+            },
+            stamina_regen: if combination_rng.0.gen_bool(0.5) {
+                parent1.stamina_regen
+            } else {
+                parent2.stamina_regen
+            },
+            physical_abilities: Vec::new(),
+            _generation: creature_generation.0,
+        };
 
-    ew_creature_created.send(CreatureCombinedEvent);
+        creature_generation.0 += 1;
+
+        // There are always 3 physical abilities.
+        for i in 0..3 {
+            if combination_rng.0.gen_bool(0.5) {
+                children
+                    .physical_abilities
+                    .push(parent1.physical_abilities[i].clone());
+            } else {
+                children
+                    .physical_abilities
+                    .push(parent2.physical_abilities[i].clone());
+            }
+        }
+
+        commands
+            .spawn((
+                SpriteBundle {
+                    texture: textures.creature.clone(),
+                    visibility: Visibility::Hidden,
+                    transform: Transform::from_scale(Vec2::splat(1.4).extend(CREATURE_Z)),
+                    ..default()
+                },
+                // Child are born in pairs.
+                PopulationSize(event.population * 2),
+                PlayerCreature,
+            ))
+            .insert(children);
+
+        ew_creature_created.send(CreatureCombinedEvent);
+    }
 }
