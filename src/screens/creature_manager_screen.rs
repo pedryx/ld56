@@ -2,14 +2,16 @@ use bevy::{
     prelude::*,
     sprite::{MaterialMesh2dBundle, Mesh2dHandle},
 };
+use bevy_kira_audio::{Audio, AudioControl};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
+    audio::SOUND_EFFECTS_GLOBAL_VOLUME,
     creature::{
         generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng,
         PopulationSize, CREATURE_SCALE, CREATURE_Z,
     },
-    loading::TextureAssets,
+    loading::{AudioAssets, TextureAssets},
     rounds::Round,
     ui::{create_basic_button, create_change_state_button, create_mini_button},
     GameState, WINDOW_SIZE,
@@ -46,6 +48,7 @@ impl Plugin for CreatureManagerScreenPlugin {
                     handle_combine_button,
                     combine_creatures,
                     show_stats,
+                    play_combine_sound,
                 )
                     .run_if(in_state(GameState::CreatureManager)),
             )
@@ -707,5 +710,17 @@ fn show_stats(
             "{:.2}",
             stats.physical_abilities[ability_index].global_cooldown
         );
+    }
+}
+
+fn play_combine_sound(
+    mut er_creatures_combined: EventReader<CreatureCombinedEvent>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
+) {
+    for _ in er_creatures_combined.read() {
+        audio
+            .play(audio_assets.combine.clone())
+            .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
     }
 }

@@ -1,7 +1,10 @@
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioControl};
 
 use crate::{
+    audio::SOUND_EFFECTS_GLOBAL_VOLUME,
     creature::CreatureStats,
+    loading::AudioAssets,
     rounds::{Difficulty, Round},
     ui::create_change_state_button,
     GameState, WINDOW_SIZE,
@@ -27,7 +30,12 @@ pub enum GameResult {
 #[derive(Component)]
 pub struct GameOverScreenItem;
 
-fn setup(mut commands: Commands, game_result: Res<State<GameResult>>) {
+fn setup(
+    mut commands: Commands,
+    game_result: Res<State<GameResult>>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
+) {
     commands.spawn((
         Text2dBundle {
             text: Text::from_section(
@@ -46,6 +54,10 @@ fn setup(mut commands: Commands, game_result: Res<State<GameResult>>) {
     ));
 
     if *game_result.get() == GameResult::Lose {
+        audio
+            .play(audio_assets.defeat.clone())
+            .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
+
         commands.spawn((
             Text2dBundle {
                 text: Text::from_section(

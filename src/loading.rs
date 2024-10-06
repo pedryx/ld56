@@ -22,6 +22,20 @@ pub struct AudioAssets {
     pub base_soundtrack: Handle<AudioSource>,
     #[asset(path = "audio/battle_soundtrack.ogg")]
     pub battle_soundtrack: Handle<AudioSource>,
+    #[asset(path = "audio/attack.ogg")]
+    pub attack: Handle<AudioSource>,
+    #[asset(path = "audio/click.ogg")]
+    pub click: Handle<AudioSource>,
+    #[asset(path = "audio/combine.ogg")]
+    pub combine: Handle<AudioSource>,
+    #[asset(path = "audio/defeat.ogg")]
+    pub defeat: Handle<AudioSource>,
+    #[asset(path = "audio/die.ogg")]
+    pub die: Handle<AudioSource>,
+    #[asset(path = "audio/spell.ogg")]
+    pub _spell: Handle<AudioSource>,
+    #[asset(path = "audio/victory.ogg")]
+    pub victory: Handle<AudioSource>,
 }
 
 #[derive(AssetCollection, Resource)]

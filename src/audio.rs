@@ -3,7 +3,8 @@ use bevy_kira_audio::prelude::*;
 
 use crate::{loading::AudioAssets, GameState};
 
-const SOUNDTRACK_GLOBAL_VOLUME: f64 = 1.0;
+const SOUNDTRACK_GLOBAL_VOLUME: f64 = 1.4;
+pub const SOUND_EFFECTS_GLOBAL_VOLUME: f64 = 0.1;
 
 pub struct InternalAudioPlugin;
 
@@ -29,13 +30,13 @@ fn start_soundtrack(
     soundtrack.base = audio
         .play(audio_assets.base_soundtrack.clone())
         .looped()
-        .with_volume(SOUNDTRACK_GLOBAL_VOLUME * 0.3)
+        .with_volume(SOUNDTRACK_GLOBAL_VOLUME * 0.2)
         .handle();
 
     soundtrack.battle = audio
         .play(audio_assets.battle_soundtrack.clone())
         .looped()
-        .with_volume(SOUNDTRACK_GLOBAL_VOLUME * 0.3)
+        .with_volume(SOUNDTRACK_GLOBAL_VOLUME * 0.6)
         .paused()
         .handle();
 }

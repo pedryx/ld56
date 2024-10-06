@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use bevy_kira_audio::{Audio, AudioControl};
 
-use crate::GameState;
+use crate::{audio::SOUND_EFFECTS_GLOBAL_VOLUME, loading::AudioAssets, GameState};
 
 const BUTTON_SIZE: Vec2 = Vec2::new(160.0, 64.0);
 
@@ -8,7 +9,15 @@ pub struct UIPlugin;
 
 impl Plugin for UIPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, (handle_button_hover, handle_change_state_buttons));
+        app.add_systems(
+            Update,
+            (
+                handle_button_hover,
+                handle_change_state_buttons,
+                play_click_button_sound,
+            )
+                .run_if(not(in_state(GameState::Loading))),
+        );
     }
 }
 
@@ -115,6 +124,20 @@ fn handle_change_state_buttons(
     for (&interaction, ChangeState(state)) in query.iter() {
         if interaction == Interaction::Pressed {
             next_state.set(state.clone());
+        }
+    }
+}
+
+fn play_click_button_sound(
+    query: Query<&Interaction, (Changed<Interaction>, With<Button>)>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
+) {
+    for interaction in query.iter() {
+        if *interaction == Interaction::Pressed {
+            audio
+                .play(audio_assets.click.clone())
+                .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
         }
     }
 }

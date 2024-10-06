@@ -8,14 +8,18 @@ use bevior_tree::{
     BehaviorTreeBundle, BehaviorTreePlugin,
 };
 use bevy::prelude::*;
-use bevy_kira_audio::{AudioInstance, AudioTween};
+use bevy_kira_audio::{Audio, AudioControl, AudioInstance, AudioTween};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
-    audio::Soundtracks, creature::{
+    audio::{Soundtracks, SOUND_EFFECTS_GLOBAL_VOLUME},
+    creature::{
         generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility,
         PopulationSize,
-    }, loading::TextureAssets, rounds::{Difficulty, Round, RoundOverEvent}, GameState, WINDOW_SIZE
+    },
+    loading::{AudioAssets, TextureAssets},
+    rounds::{Difficulty, Round, RoundOverEvent},
+    GameState, WINDOW_SIZE,
 };
 
 use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
@@ -60,6 +64,7 @@ impl Plugin for BattleScreenPlugin {
                     go_to_nearest_enemy,
                     stats_recovery,
                     attack_enemy,
+                    play_battle_sounds,
                     handle_damage_effect,
                     death_system,
                     spawn_blood_puddle,
@@ -133,22 +138,25 @@ struct AttackRng(StdRng);
 struct CreaturePositionRng(StdRng);
 
 fn setup_environment(
-    mut commands: Commands, 
+    mut commands: Commands,
     textures: Res<TextureAssets>,
     mut audio_instances: ResMut<Assets<AudioInstance>>,
     soundtracks: Res<Soundtracks>,
-
 ) {
     // soundtrack
     audio_instances
         .get_mut(&soundtracks.base)
         .unwrap()
-        .pause(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+        .pause(AudioTween::linear(Duration::from_secs_f32(
+            VOLUME_TRANSITION,
+        )));
     audio_instances
         .get_mut(&soundtracks.battle)
         .unwrap()
-        .resume(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
-    
+        .resume(AudioTween::linear(Duration::from_secs_f32(
+            VOLUME_TRANSITION,
+        )));
+
     // background
     commands.spawn((
         SpriteBundle {
@@ -302,7 +310,7 @@ fn setup_enemy_creatures(
 }
 
 fn cleanup(
-    mut commands: Commands, 
+    mut commands: Commands,
     query: Query<Entity, With<BattleScreenItem>>,
     mut audio_instances: ResMut<Assets<AudioInstance>>,
     soundtracks: Res<Soundtracks>,
@@ -311,16 +319,20 @@ fn cleanup(
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
-    
+
     // soundtrack
     audio_instances
         .get_mut(&soundtracks.battle)
         .unwrap()
-        .pause(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+        .pause(AudioTween::linear(Duration::from_secs_f32(
+            VOLUME_TRANSITION,
+        )));
     audio_instances
         .get_mut(&soundtracks.base)
         .unwrap()
-        .resume(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+        .resume(AudioTween::linear(Duration::from_secs_f32(
+            VOLUME_TRANSITION,
+        )));
 }
 
 fn find_nearest_enemy(
@@ -627,5 +639,31 @@ fn spawn_blood_puddle(
             },
             BattleScreenItem,
         ));
+    }
+}
+
+fn play_battle_sounds(
+    mut er_damage_taken: EventReader<DamageTakenEvent>,
+    mut er_creature_die: EventReader<CreatureDieEvent>,
+    mut er_round_over: EventReader<RoundOverEvent>,
+    audio: Res<Audio>,
+    audio_assets: Res<AudioAssets>,
+) {
+    for _ in er_damage_taken.read() {
+        audio
+            .play(audio_assets.attack.clone())
+            .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
+    }
+
+    for _ in er_creature_die.read() {
+        audio
+            .play(audio_assets.die.clone())
+            .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
+    }
+
+    for _ in er_round_over.read() {
+        audio
+            .play(audio_assets.victory.clone())
+            .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
     }
 }
