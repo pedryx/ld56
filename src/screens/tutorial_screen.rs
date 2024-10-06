@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{loading::TextureAssets, GameState, WINDOW_SIZE};
+use crate::{loading::TextureAssets, rounds::GameStartedEvent, GameState, WINDOW_SIZE};
 
 pub struct TutorialScreenPlugin;
 
@@ -32,9 +32,11 @@ fn setup(
     mut tutorial: ResMut<Tutorial>,
     mut next_state: ResMut<NextState<GameState>>,
     textures: Res<TextureAssets>,
+    mut ew_game_started: EventWriter<GameStartedEvent>,
 ) {
     if tutorial.shown {
         next_state.set(GameState::CreatureManager);
+        ew_game_started.send(GameStartedEvent);
         return;
     }
     tutorial.shown = true;
@@ -63,10 +65,12 @@ fn cleanup(mut commands: Commands, query: Query<Entity, With<TutorialScreenItem>
 fn handle_tutorial_end_button(
     query: Query<&Interaction, (With<EndTutorialButton>, Changed<Interaction>, With<Button>)>,
     mut next_state: ResMut<NextState<GameState>>,
+    mut ew_game_started: EventWriter<GameStartedEvent>,
 ) {
     for &interaction in query.iter() {
         if interaction == Interaction::Pressed {
             next_state.set(GameState::CreatureManager);
+            ew_game_started.send(GameStartedEvent);
         }
     }
 }

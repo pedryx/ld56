@@ -13,7 +13,7 @@ use crate::{
         PopulationChangedEvent, PopulationSize, CREATURE_SCALE, CREATURE_Z,
     },
     loading::{AudioAssets, TextureAssets},
-    rounds::{GameStartedEvent, Round},
+    rounds::Round,
     ui::{create_basic_button, create_change_state_button, create_mini_button},
     GameState, WINDOW_SIZE,
 };
@@ -39,7 +39,6 @@ impl Plugin for CreatureManagerScreenPlugin {
                 (
                     (generate_new_creature, (setup_ui, create_round_counter)).chain(),
                     setup_stats_windows,
-                    trigger_game_started_event,
                 ),
             )
             .add_systems(OnExit(GameState::CreatureManager), cleanup)
@@ -113,10 +112,6 @@ enum StatLabel {
 
 #[derive(Component)]
 struct StatWindow;
-
-fn trigger_game_started_event(mut ew_game_started: EventWriter<GameStartedEvent>) {
-    ew_game_started.send(GameStartedEvent);
-}
 
 fn create_round_counter(mut commands: Commands, textures: Res<TextureAssets>, round: Res<Round>) {
     commands
