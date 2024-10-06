@@ -6,6 +6,7 @@ mod loading;
 mod menu;
 mod rounds;
 mod screens;
+mod statistics;
 mod ui;
 
 use crate::creature::CreaturePlugin;
@@ -21,6 +22,7 @@ use rounds::RoundsPlugin;
 use screens::battle_screen::BattleScreenPlugin;
 use screens::creature_manager_screen::CreatureManagerScreenPlugin;
 use screens::game_over_screen::GameOverScreenPlugin;
+use statistics::StatisticsPlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 enum GameState {
@@ -57,6 +59,7 @@ impl Plugin for GamePlugin {
             GameOverScreenPlugin,
             RoundsPlugin,
             InternalAudioPlugin,
+            StatisticsPlugin,
         ));
 
         app.add_systems(Startup, setup_camera);

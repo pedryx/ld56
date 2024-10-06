@@ -84,8 +84,9 @@ struct BattleVisualsRng(StdRng);
 struct DamageTakenEvent(Entity);
 
 #[derive(Event)]
-struct CreatureDieEvent {
-    pos: Vec2,
+pub struct CreatureDieEvent {
+    pub pos: Vec2,
+    pub is_enemy: bool,
 }
 
 #[derive(Component, Default)]
@@ -539,6 +540,7 @@ fn death_system(
     mut commands: Commands,
     hp_query: Query<(Entity, &BattleCreature, &BattleCreatureStats, &Transform)>,
     mut population_query: Query<&mut PopulationSize>,
+    enemy_query: Query<&Enemy>,
     mut ew_creature_die: EventWriter<CreatureDieEvent>,
 ) {
     let mut entities_to_die = Vec::new();
@@ -551,6 +553,7 @@ fn death_system(
             entities_to_die.push(entity);
             ew_creature_die.send(CreatureDieEvent {
                 pos: transform.translation.xy(),
+                is_enemy: enemy_query.get(entity).is_ok(),
             });
         }
     }

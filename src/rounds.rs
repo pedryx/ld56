@@ -21,9 +21,17 @@ impl Plugin for RoundsPlugin {
         app.init_resource::<Round>()
             .init_resource::<Difficulty>()
             .init_resource::<GameSettings>()
-            .add_event::<RoundOverEvent>();
+            .add_event::<RoundOverEvent>()
+            .add_event::<GameStartedEvent>()
+            .add_event::<GameEndedEvent>();
     }
 }
+
+#[derive(Event)]
+pub struct GameStartedEvent;
+
+#[derive(Event)]
+pub struct GameEndedEvent;
 
 #[derive(Resource, Default)]
 pub struct GameSettings {
