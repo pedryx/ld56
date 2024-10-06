@@ -43,9 +43,13 @@ impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GenerateCreatureRng(StdRng::from_entropy()))
             .init_resource::<CreatureGeneration>()
-            .add_systems(Update, (delete_empty_creatures, breed_creatures));
+            .add_systems(Update, (delete_empty_creatures, breed_creatures))
+            .add_event::<PopulationChangedEvent>();
     }
 }
+
+#[derive(Event)]
+pub struct PopulationChangedEvent;
 
 #[derive(Component)]
 pub struct BodyPart;
@@ -185,11 +189,14 @@ fn generate_physical_ability(name: &'static str, tier: u8, rng: &mut StdRng) -> 
 
 fn delete_empty_creatures(
     mut commands: Commands,
-    query: Query<(Entity, &PopulationSize), Changed<PopulationSize>>,
+    query: Query<(Entity, &PopulationSize)>,
+    mut er_population_changed: EventReader<PopulationChangedEvent>,
 ) {
-    for (entity, &PopulationSize(size)) in query.iter() {
-        if size == 0 {
-            commands.entity(entity).despawn_recursive();
+    for _ in er_population_changed.read() {
+        for (entity, &PopulationSize(size)) in query.iter() {
+            if size == 0 {
+                commands.entity(entity).despawn_recursive();
+            }
         }
     }
 }

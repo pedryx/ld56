@@ -8,8 +8,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use crate::{
     audio::SOUND_EFFECTS_GLOBAL_VOLUME,
     creature::{
-        generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng,
-        PopulationSize, CREATURE_SCALE, CREATURE_Z,
+        generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng, PopulationChangedEvent, PopulationSize, CREATURE_SCALE, CREATURE_Z
     },
     loading::{AudioAssets, TextureAssets},
     rounds::{GameStartedEvent, Round},
@@ -51,6 +50,7 @@ impl Plugin for CreatureManagerScreenPlugin {
                     combine_creatures,
                     show_stats,
                     play_combine_sound,
+                    trigger_population_changed,
                 )
                     .run_if(in_state(GameState::CreatureManager)),
             )
@@ -766,5 +766,14 @@ fn play_combine_sound(
         audio
             .play(audio_assets.combine.clone())
             .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
+    }
+}
+
+fn trigger_population_changed(
+    mut er_creature_combined: EventReader<CreatureCombinedEvent>,
+    mut ew_population_changed: EventWriter<PopulationChangedEvent>,
+) {
+    for _ in er_creature_combined.read() {
+        ew_population_changed.send(PopulationChangedEvent);
     }
 }

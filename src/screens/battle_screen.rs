@@ -14,8 +14,7 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use crate::{
     audio::{Soundtracks, SOUND_EFFECTS_GLOBAL_VOLUME},
     creature::{
-        generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility,
-        PopulationSize,
+        generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationChangedEvent, PopulationSize
     },
     loading::{AudioAssets, TextureAssets},
     rounds::{Difficulty, GameSettings, Round, RoundOverEvent},
@@ -542,6 +541,7 @@ fn death_system(
     mut population_query: Query<&mut PopulationSize>,
     enemy_query: Query<&Enemy>,
     mut ew_creature_die: EventWriter<CreatureDieEvent>,
+    mut ew_population_changed: EventWriter<PopulationChangedEvent>,
 ) {
     let mut entities_to_die = Vec::new();
 
@@ -549,6 +549,7 @@ fn death_system(
         if stats.hp <= 0.0 {
             let mut population = population_query.get_mut(creature.template).unwrap();
             population.0 -= 1;
+            ew_population_changed.send(PopulationChangedEvent);
 
             entities_to_die.push(entity);
             ew_creature_die.send(CreatureDieEvent {
