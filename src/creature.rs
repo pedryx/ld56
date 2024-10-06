@@ -32,7 +32,8 @@ pub struct CreaturePlugin;
 impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GenerateCreatureRng(StdRng::from_entropy()))
-            .init_resource::<CreatureGeneration>();
+            .init_resource::<CreatureGeneration>()
+            .add_systems(Update, delete_empty_creatures);
     }
 }
 
@@ -135,5 +136,16 @@ fn generate_physical_ability(name: &'static str, tier: u8, rng: &mut StdRng) -> 
         ),
         damage: generate_stat_value(MIN_PHYS_DMG, MAX_PHYS_DMG, tier, rng, false),
         global_cooldown: generate_stat_value(MIN_PHYS_COOLDOWN, MAX_PHYS_COOLDOWN, tier, rng, true),
+    }
+}
+
+fn delete_empty_creatures(
+    mut commands: Commands,
+    query: Query<(Entity, &PopulationSize), Changed<PopulationSize>>,
+) {
+    for (entity, &PopulationSize(size)) in query.iter() {
+        if size == 0 {
+            commands.entity(entity).despawn_recursive();
+        }
     }
 }
