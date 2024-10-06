@@ -2,6 +2,8 @@ use crate::loading::TextureAssets;
 use crate::GameState;
 use bevy::prelude::*;
 
+const BACKGROUND_Z: f32 = -20.0;
+
 pub struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
@@ -30,7 +32,20 @@ impl Default for ButtonColors {
 #[derive(Component)]
 struct Menu;
 
-fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
+fn setup_menu(
+    mut commands: Commands,
+    textures: Res<TextureAssets>,
+) {
+    // background
+    commands.spawn((
+        SpriteBundle {
+            texture: textures.menu_background.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
+            ..default()
+        },
+        Menu,
+    ));
+
     info!("menu");
     commands
         .spawn((

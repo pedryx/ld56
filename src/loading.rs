@@ -9,7 +9,7 @@ impl Plugin for LoadingPlugin {
     fn build(&self, app: &mut App) {
         app.add_loading_state(
             LoadingState::new(GameState::Loading)
-                .continue_to_state(GameState::CreatureManager)
+                .continue_to_state(GameState::Menu)
                 .load_collection::<AudioAssets>()
                 .load_collection::<TextureAssets>(),
         );
@@ -52,4 +52,8 @@ pub struct TextureAssets {
     pub battle_background: Handle<Image>,
     #[asset(path = "textures/blood.png")]
     pub blood: Handle<Image>,
+    #[asset(path = "textures/creature_manager_background.png")]
+    pub creature_manager_background: Handle<Image>,
+    #[asset(path = "textures/menu_background.png")]
+    pub menu_background: Handle<Image>,
 }

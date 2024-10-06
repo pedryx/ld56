@@ -23,6 +23,7 @@ const CREATURES_Z: f32 = 0.0;
 const GRID_SIZE: Vec2 = Vec2::new(8.0, 3.0);
 const COUNT_OFFSET: Vec2 = Vec2::new(0.0, 68.0);
 const CREATURE_BUTTON_SIZE: Vec2 = Vec2::new(96.0, 96.0);
+const BACKGROUND_Z: f32 = -20.0;
 
 pub struct CreatureManagerScreenPlugin;
 
@@ -157,7 +158,7 @@ fn setup_stats_windows(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let color_material_handle = materials.add(Color::linear_rgb(0.16, 0.16, 0.16));
+    let color_material_handle = materials.add(Color::linear_rgba(0.16, 0.16, 0.16, 0.0));
 
     let stats_text_style = TextStyle {
         font_size: STAT_FONT_SIZE,
@@ -296,7 +297,18 @@ fn setup_ui(
         ),
         With<PlayerCreature>,
     >,
+    textures: Res<TextureAssets>,
 ) {
+    // background
+    commands.spawn((
+        SpriteBundle {
+            texture: textures.creature_manager_background.clone(),
+            transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
+            ..default()
+        },
+        CreatureManagerScreenItem,
+    ));
+
     let mut x = 0;
     let mut y = 0;
 
@@ -372,22 +384,22 @@ fn setup_ui(
     let button = create_basic_button(
         &mut commands,
         "Combine",
-        WINDOW_SIZE * Vec2::new(0.11, 0.82),
+        WINDOW_SIZE * Vec2::new(0.11, 0.85),
     );
     commands
         .entity(button)
         .insert((CreatureManagerScreenItem, CombineButton));
 
-    let button = create_mini_button(&mut commands, "+", WINDOW_SIZE * Vec2::new(0.26, 0.82));
+    let button = create_mini_button(&mut commands, "+", WINDOW_SIZE * Vec2::new(0.26, 0.85));
     commands
         .entity(button)
         .insert((CreatureManagerScreenItem, IncButton));
-    let button = create_mini_button(&mut commands, "-", WINDOW_SIZE * Vec2::new(0.315, 0.82));
+    let button = create_mini_button(&mut commands, "-", WINDOW_SIZE * Vec2::new(0.315, 0.85));
     commands
         .entity(button)
         .insert((CreatureManagerScreenItem, DecButton));
 
-    let mut pos = WINDOW_SIZE * Vec2::new(0.16, 0.92);
+    let mut pos = WINDOW_SIZE * Vec2::new(0.16, 0.95);
     pos.y = WINDOW_SIZE.y - pos.y;
     pos -= WINDOW_SIZE / 2.0;
     commands.spawn((
