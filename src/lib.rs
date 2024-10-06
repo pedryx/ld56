@@ -1,5 +1,6 @@
 #![allow(clippy::type_complexity)]
 
+mod audio;
 mod creature;
 mod loading;
 mod menu;
@@ -13,6 +14,7 @@ use crate::menu::MenuPlugin;
 use crate::screens::new_creature_screen::NewCreatureScreenPlugin;
 use crate::ui::UIPlugin;
 
+use audio::InternalAudioPlugin;
 use bevy::app::App;
 use bevy::prelude::*;
 use rounds::RoundsPlugin;
@@ -47,6 +49,7 @@ impl Plugin for GamePlugin {
             CreatureManagerScreenPlugin,
             GameOverScreenPlugin,
             RoundsPlugin,
+            InternalAudioPlugin,
         ));
 
         app.add_systems(Startup, setup_camera);

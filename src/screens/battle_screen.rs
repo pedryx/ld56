@@ -1,5 +1,5 @@
 use core::f32;
-use std::f32::consts::PI;
+use std::{f32::consts::PI, time::Duration};
 
 use bevior_tree::{
     node::NodeResult,
@@ -8,16 +8,14 @@ use bevior_tree::{
     BehaviorTreeBundle, BehaviorTreePlugin,
 };
 use bevy::prelude::*;
+use bevy_kira_audio::{AudioInstance, AudioTween};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
-    creature::{
+    audio::Soundtracks, creature::{
         generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility,
         PopulationSize,
-    },
-    loading::TextureAssets,
-    rounds::{Difficulty, Round, RoundOverEvent},
-    GameState, WINDOW_SIZE,
+    }, loading::TextureAssets, rounds::{Difficulty, Round, RoundOverEvent}, GameState, WINDOW_SIZE
 };
 
 use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
@@ -29,6 +27,8 @@ const DAMAGE_EFFECT_DURATION: f32 = 0.1;
 const DAMAGE_EFFECT_Z: f32 = 40.0;
 const BACKGROUND_Z: f32 = -20.0;
 const BLOOD_PUDDLE_Z: f32 = -10.0;
+
+const VOLUME_TRANSITION: f32 = 0.5;
 
 pub struct BattleScreenPlugin;
 
@@ -132,7 +132,24 @@ struct AttackRng(StdRng);
 #[derive(Resource)]
 struct CreaturePositionRng(StdRng);
 
-fn setup_environment(mut commands: Commands, textures: Res<TextureAssets>) {
+fn setup_environment(
+    mut commands: Commands, 
+    textures: Res<TextureAssets>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
+    soundtracks: Res<Soundtracks>,
+
+) {
+    // soundtrack
+    audio_instances
+        .get_mut(&soundtracks.base)
+        .unwrap()
+        .pause(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+    audio_instances
+        .get_mut(&soundtracks.battle)
+        .unwrap()
+        .resume(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+    
+    // background
     commands.spawn((
         SpriteBundle {
             texture: textures.battle_background.clone(),
@@ -284,10 +301,26 @@ fn setup_enemy_creatures(
     }
 }
 
-fn cleanup(mut commands: Commands, query: Query<Entity, With<BattleScreenItem>>) {
+fn cleanup(
+    mut commands: Commands, 
+    query: Query<Entity, With<BattleScreenItem>>,
+    mut audio_instances: ResMut<Assets<AudioInstance>>,
+    soundtracks: Res<Soundtracks>,
+) {
+    // delete entities
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+    
+    // soundtrack
+    audio_instances
+        .get_mut(&soundtracks.battle)
+        .unwrap()
+        .pause(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
+    audio_instances
+        .get_mut(&soundtracks.base)
+        .unwrap()
+        .resume(AudioTween::linear(Duration::from_secs_f32(VOLUME_TRANSITION)));
 }
 
 fn find_nearest_enemy(

@@ -1,6 +1,7 @@
 use crate::GameState;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
+use bevy_kira_audio::AudioSource;
 
 pub struct LoadingPlugin;
 
@@ -16,7 +17,12 @@ impl Plugin for LoadingPlugin {
 }
 
 #[derive(AssetCollection, Resource)]
-pub struct AudioAssets {}
+pub struct AudioAssets {
+    #[asset(path = "audio/base_soundtrack.ogg")]
+    pub base_soundtrack: Handle<AudioSource>,
+    #[asset(path = "audio/battle_soundtrack.ogg")]
+    pub battle_soundtrack: Handle<AudioSource>,
+}
 
 #[derive(AssetCollection, Resource)]
 pub struct TextureAssets {
