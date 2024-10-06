@@ -97,7 +97,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                     ..Default::default()
                 },
                 button_colors,
-                ChangeState(GameState::CreatureManager),
+                ChangeState(GameState::Tutorial),
             ))
             .with_children(|parent| {
                 parent.spawn(TextBundle::from_section(
@@ -128,7 +128,7 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
                     ..Default::default()
                 },
                 button_colors,
-                ChangeState(GameState::CreatureManager),
+                ChangeState(GameState::Tutorial),
                 InfinityModeButton,
             ))
             .with_children(|parent| {

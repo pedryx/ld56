@@ -22,6 +22,7 @@ use rounds::RoundsPlugin;
 use screens::battle_screen::BattleScreenPlugin;
 use screens::creature_manager_screen::CreatureManagerScreenPlugin;
 use screens::game_over_screen::GameOverScreenPlugin;
+use screens::tutorial_screen::TutorialScreenPlugin;
 use statistics::StatisticsPlugin;
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
@@ -33,6 +34,7 @@ enum GameState {
     Battle,
     CreatureManager,
     GameOver(GameResult),
+    Tutorial,
 }
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
@@ -60,6 +62,7 @@ impl Plugin for GamePlugin {
             RoundsPlugin,
             InternalAudioPlugin,
             StatisticsPlugin,
+            TutorialScreenPlugin,
         ));
 
         app.add_systems(Startup, setup_camera);

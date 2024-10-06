@@ -112,7 +112,7 @@ fn setup(
 
     let seconds = game_statistics.elapsed_seconds as usize % 60;
     let minutes = game_statistics.elapsed_seconds as usize / 60;
-    let play_time = format!("{}:{:02}", minutes, seconds);    
+    let play_time = format!("{}:{:02}", minutes, seconds);
 
     commands.spawn((
         Text2dBundle {
@@ -120,13 +120,19 @@ fn setup(
                 TextSection::new("play time: ", text_style.clone()),
                 TextSection::new(play_time, text_style.clone()),
                 TextSection::new("\nsurvived rounds: ", text_style.clone()),
-                TextSection::new(game_statistics.survived_rounds.to_string(), text_style.clone()),
+                TextSection::new(
+                    game_statistics.survived_rounds.to_string(),
+                    text_style.clone(),
+                ),
                 TextSection::new("\nenemies killed: ", text_style.clone()),
                 TextSection::new(game_statistics.ally_kills.to_string(), text_style.clone()),
                 TextSection::new("\nally died: ", text_style.clone()),
                 TextSection::new(game_statistics.ally_deaths.to_string(), text_style.clone()),
                 TextSection::new("\ncombination count: ", text_style.clone()),
-                TextSection::new(game_statistics.combination_count.to_string(), text_style.clone()),
+                TextSection::new(
+                    game_statistics.combination_count.to_string(),
+                    text_style.clone(),
+                ),
             ]),
             text_anchor: bevy::sprite::Anchor::Center,
             transform: Transform::from_translation(
