@@ -1,8 +1,9 @@
 use crate::loading::TextureAssets;
-use crate::GameState;
+use crate::{GameState, WINDOW_SIZE};
 use bevy::prelude::*;
 
 const BACKGROUND_Z: f32 = -20.0;
+const TITLE_Z: f32 = 0.0;
 
 pub struct MenuPlugin;
 
@@ -41,6 +42,19 @@ fn setup_menu(
         SpriteBundle {
             texture: textures.menu_background.clone(),
             transform: Transform::from_xyz(0.0, 0.0, BACKGROUND_Z),
+            ..default()
+        },
+        Menu,
+    ));
+
+    // title
+    commands.spawn((
+        Text2dBundle {
+            text: Text::from_section("Tiny Legion", TextStyle {
+                font_size: 128.0,
+                ..default()
+            }),
+            transform: Transform::from_translation((WINDOW_SIZE * Vec2::new(0.0, 0.3)).extend(TITLE_Z)),
             ..default()
         },
         Menu,
