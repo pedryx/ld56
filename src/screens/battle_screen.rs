@@ -11,7 +11,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
     creature::{
-        generate_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
+        generate_creature, BodyPart, CreatureStats, GenerateCreatureRng, PhysicalAbility,
+        PopulationSize,
     },
     loading::TextureAssets,
     rounds::{Difficulty, Round, RoundOverEvent},
@@ -21,7 +22,7 @@ use crate::{
 use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
 
 const CREATURE_Z: f32 = 1.0;
-const CREATURE_SCALE: f32 = 0.5;
+const CREATURE_SCALE: f32 = 1.0;
 const MELEE_DISTANCE: f32 = 32.0;
 
 pub struct BattleScreenPlugin;
@@ -104,13 +105,15 @@ struct CreaturePositionRng(StdRng);
 
 fn create_population(
     commands: &mut Commands,
+    body_part_query: &Query<(&Sprite, &Handle<Image>, &Transform), With<BodyPart>>,
     rng: &mut StdRng,
     entity: Entity,
-    texture: &Handle<Image>,
-    stats: &CreatureStats,
+    components: (&CreatureStats, &Children),
     count: u32,
     is_enemy: bool,
 ) {
+    let (stats, entity_children) = components;
+
     for _ in 0..count {
         let mut position = Vec3::new(
             rng.gen_range(-WINDOW_SIZE.x / 2.0..-WINDOW_SIZE.x / 6.0),
@@ -126,7 +129,6 @@ fn create_population(
             SpriteBundle {
                 transform: Transform::from_translation(position)
                     .with_scale(Vec2::splat(CREATURE_SCALE).extend(1.0)),
-                texture: texture.clone(),
                 sprite: Sprite {
                     flip_x: is_enemy,
                     ..default()
@@ -149,6 +151,24 @@ fn create_population(
             BehaviorTreeContext::default(),
             create_melee_behavior_tree(),
         ));
+        entity.with_children(|children| {
+            for &child in entity_children.iter() {
+                let (sprite, texture, transform) = body_part_query.get(child).unwrap();
+
+                let mut sprite = sprite.clone();
+                sprite.flip_x = is_enemy;
+
+                children.spawn((
+                    SpriteBundle {
+                        sprite,
+                        texture: texture.clone(),
+                        transform: *transform,
+                        ..default()
+                    },
+                    BodyPart,
+                ));
+            }
+        });
 
         if is_enemy {
             entity.insert(Enemy);
@@ -163,23 +183,24 @@ fn setup_player_creatures(
         (
             Entity,
             &mut Visibility,
-            &Handle<Image>,
             &PopulationSize,
             &CreatureStats,
+            &Children,
         ),
         With<PlayerCreature>,
     >,
+    body_part_query: Query<(&Sprite, &Handle<Image>, &Transform), With<BodyPart>>,
 ) {
-    for (entity, mut visibility, texture, &PopulationSize(population_size), stats) in
+    for (entity, mut visibility, &PopulationSize(population_size), stats, children) in
         query.iter_mut()
     {
         *visibility = Visibility::Hidden;
         create_population(
             &mut commands,
+            &body_part_query,
             &mut creature_position_rng.0,
             entity,
-            texture,
-            stats,
+            (stats, children),
             population_size,
             false,
         );
@@ -207,18 +228,16 @@ fn generate_enemy_creatures(
 fn setup_enemy_creatures(
     mut commands: Commands,
     mut creature_position_rng: ResMut<CreaturePositionRng>,
-    mut query: Query<
-        (Entity, &Handle<Image>, &PopulationSize, &CreatureStats),
-        Without<PlayerCreature>,
-    >,
+    mut query: Query<(Entity, &PopulationSize, &CreatureStats, &Children), Without<PlayerCreature>>,
+    body_part_query: Query<(&Sprite, &Handle<Image>, &Transform), With<BodyPart>>,
 ) {
-    for (entity, texture, &PopulationSize(population_size), stats) in query.iter_mut() {
+    for (entity, &PopulationSize(population_size), stats, children) in query.iter_mut() {
         create_population(
             &mut commands,
+            &body_part_query,
             &mut creature_position_rng.0,
             entity,
-            texture,
-            stats,
+            (stats, children),
             population_size,
             true,
         );

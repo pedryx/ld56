@@ -6,8 +6,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
     creature::{
-        generate_creature, CreatureGeneration, CreatureStats, GenerateCreatureRng, PopulationSize,
-        CREATURE_Z,
+        generate_creature, BodyPart, CreatureGeneration, CreatureStats, GenerateCreatureRng,
+        PopulationSize, CREATURE_SCALE, CREATURE_Z,
     },
     loading::TextureAssets,
     rounds::Round,
@@ -552,18 +552,18 @@ fn handle_combine_button(
 
 fn combine_creatures(
     mut commands: Commands,
-    creature_query: Query<&CreatureStats>,
-    textures: Res<TextureAssets>,
+    creature_query: Query<(&CreatureStats, &Children)>,
+    sprite_query: Query<(&Sprite, &Handle<Image>, &Transform), With<BodyPart>>,
     mut combination_rng: ResMut<CombinationRng>,
     mut creature_generation: ResMut<CreatureGeneration>,
     mut ew_creature_created: EventWriter<CreatureCombinedEvent>,
     mut er_combine_button_pressed: EventReader<CombineButtonPressedEvent>,
 ) {
     for event in er_combine_button_pressed.read() {
-        let parent1 = creature_query.get(event.parent1).unwrap();
-        let parent2 = creature_query.get(event.parent2).unwrap();
+        let (parent1, children1) = creature_query.get(event.parent1).unwrap();
+        let (parent2, children2) = creature_query.get(event.parent2).unwrap();
 
-        let mut children = CreatureStats {
+        let mut children_stats = CreatureStats {
             hp: if combination_rng.0.gen_bool(0.5) {
                 parent1.hp
             } else {
@@ -587,37 +587,55 @@ fn combine_creatures(
             physical_abilities: Vec::new(),
             _generation: creature_generation.0,
         };
-
         creature_generation.0 += 1;
-
         // There are always 3 physical abilities.
         for i in 0..3 {
             if combination_rng.0.gen_bool(0.5) {
-                children
+                children_stats
                     .physical_abilities
                     .push(parent1.physical_abilities[i].clone());
             } else {
-                children
+                children_stats
                     .physical_abilities
                     .push(parent2.physical_abilities[i].clone());
             }
         }
+        children_stats.mutate(&mut combination_rng.0);
 
-        children.mutate(&mut combination_rng.0);
+        let mut entity = commands.spawn((
+            SpriteBundle {
+                visibility: Visibility::Hidden,
+                transform: Transform::from_scale(Vec2::splat(CREATURE_SCALE).extend(CREATURE_Z)),
+                ..default()
+            },
+            // Child are born in pairs.
+            PopulationSize(event.population * 2),
+            PlayerCreature,
+        ));
+        entity.insert(children_stats);
 
-        commands
-            .spawn((
-                SpriteBundle {
-                    texture: textures.creature.clone(),
-                    visibility: Visibility::Hidden,
-                    transform: Transform::from_scale(Vec2::splat(1.4).extend(CREATURE_Z)),
-                    ..default()
-                },
-                // Child are born in pairs.
-                PopulationSize(event.population * 2),
-                PlayerCreature,
-            ))
-            .insert(children);
+        let children = children1.iter().zip(children2).map(|(child1, child2)| {
+            if combination_rng.0.gen_bool(0.5) {
+                child1
+            } else {
+                child2
+            }
+        });
+        for &child in children {
+            let (sprite, texture, transform) = sprite_query.get(child).unwrap();
+
+            entity.with_children(|children| {
+                children.spawn((
+                    SpriteBundle {
+                        sprite: sprite.clone(),
+                        texture: texture.clone(),
+                        transform: *transform,
+                        ..default()
+                    },
+                    BodyPart,
+                ));
+            });
+        }
 
         ew_creature_created.send(CreatureCombinedEvent);
     }

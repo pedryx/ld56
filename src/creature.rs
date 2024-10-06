@@ -30,6 +30,12 @@ const MAX_POPULATION: u32 = 15;
 const MUTATION_CHANCE: f64 = 0.25;
 
 pub const CREATURE_Z: f32 = 10.0;
+pub const CREATURE_SCALE: f32 = 2.5;
+
+const BODY_PART_TYPES: usize = 6;
+const BODY_PARTS_CELL_SIZE: usize = 32;
+const BODY_PARTS_COUNT: usize = 4;
+const BODY_PARTS_Z: [f32; BODY_PARTS_COUNT] = [10.0, 11.0, 9.0, 8.0];
 
 pub struct CreaturePlugin;
 
@@ -40,6 +46,9 @@ impl Plugin for CreaturePlugin {
             .add_systems(Update, (delete_empty_creatures, breed_creatures));
     }
 }
+
+#[derive(Component)]
+pub struct BodyPart;
 
 #[derive(Resource, Default)]
 pub struct CreatureGeneration(pub u64);
@@ -128,16 +137,18 @@ pub fn generate_creature(
     let population = population * pop_multiplier;
     let population = PopulationSize(population as u32);
 
-    commands
+    let entity = commands
         .spawn(SpriteBundle {
-            texture: textures.creature.clone(),
             visibility: Visibility::Hidden,
-            transform: Transform::from_scale(Vec2::splat(1.4).extend(CREATURE_Z)),
+            transform: Transform::from_scale(Vec2::splat(CREATURE_SCALE).extend(CREATURE_Z)),
             ..default()
         })
         .insert(creature)
         .insert(population)
-        .id()
+        .id();
+    generate_creature_appearance(commands, textures, rng, entity);
+
+    entity
 }
 
 fn generate_stat_value(min: f32, max: f32, tier: u8, rng: &mut StdRng, inverse: bool) -> f32 {
@@ -192,4 +203,36 @@ fn breed_creatures(
             population.0 = (population.0 as f32 * 1.5) as u32;
         }
     }
+}
+
+pub fn generate_creature_appearance(
+    commands: &mut Commands,
+    textures: &Res<TextureAssets>,
+    rng: &mut StdRng,
+    entity: Entity,
+) {
+    commands.entity(entity).with_children(|children| {
+        for (i, &z) in BODY_PARTS_Z.iter().enumerate() {
+            let pos = Vec2::new(
+                (rng.gen_range(0..BODY_PART_TYPES) as f32 + 0.5) * BODY_PARTS_CELL_SIZE as f32,
+                BODY_PARTS_CELL_SIZE as f32 * (i as f32 + 0.5),
+            );
+
+            children.spawn((
+                SpriteBundle {
+                    sprite: Sprite {
+                        rect: Some(Rect::from_center_size(
+                            pos,
+                            Vec2::splat(BODY_PARTS_CELL_SIZE as f32),
+                        )),
+                        ..default()
+                    },
+                    texture: textures.body_parts.clone(),
+                    transform: Transform::from_xyz(0.0, 0.0, z),
+                    ..default()
+                },
+                BodyPart,
+            ));
+        }
+    });
 }
