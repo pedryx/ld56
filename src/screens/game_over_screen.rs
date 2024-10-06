@@ -97,12 +97,13 @@ fn setup(
         ));
     }
 
-    create_change_state_button(
+    let entity = create_change_state_button(
         &mut commands,
         "Main Menu",
         WINDOW_SIZE * Vec2::new(0.5, 0.9),
         GameState::Menu,
     );
+    commands.entity(entity).insert(GameOverScreenItem);
 }
 
 fn cleanup(
