@@ -114,9 +114,11 @@ fn generate_new_creature(
     textures: Res<TextureAssets>,
     round: Res<Round>,
 ) {
-    let mut count = 1;
-
+    let mut count = 0;
     if round.0 == 1 {
+        count += 1;
+    }
+    if round.0 % 2 == 1 {
         count += 1;
     }
 

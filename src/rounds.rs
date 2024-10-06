@@ -6,9 +6,9 @@ const MIN_ENEMY_TIER: f32 = 1.0;
 const MIN_ENEMY_COUNT: f32 = 1.0;
 const MIN_ENEMY_POP_MULT: f32 = 0.5;
 
-const ENEMY_TIER_INC: f32 = 0.5;
-const ENEMY_COUNT_INC: f32 = 0.5;
-const ENEMY_POP_INC: f32 = 0.25;
+const ENEMY_TIER_INC: f32 = 0.7;
+const ENEMY_COUNT_INC: f32 = 0.8;
+const ENEMY_POP_INC: f32 = 0.5;
 
 const ENEMY_TIER_STD_DEV: f32 = 1.0;
 const ENEMY_COUNT_STD_DEV: f32 = 0.5;
