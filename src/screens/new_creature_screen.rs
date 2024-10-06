@@ -58,6 +58,7 @@ fn spawn_creature(
             &textures,
             tier,
             creature_generation.0,
+            1.0,
         );
 
         creature_generation.0 += 1;

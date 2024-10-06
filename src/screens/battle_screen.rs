@@ -14,6 +14,7 @@ use crate::{
         generate_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
     },
     loading::TextureAssets,
+    rounds::{Difficulty, Round},
     GameState, WINDOW_SIZE,
 };
 
@@ -22,9 +23,6 @@ use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 0.5;
 const MELEE_DISTANCE: f32 = 32.0;
-
-const ENEMY_CREATURE_TIER: u8 = 1;
-const ENEMY_CREATURE_COUNT: u8 = 1;
 
 pub struct BattleScreenPlugin;
 
@@ -192,14 +190,16 @@ fn generate_enemy_creatures(
     mut commands: Commands,
     mut generate_creature_rng: ResMut<GenerateCreatureRng>,
     textures: Res<TextureAssets>,
+    mut difficulty: ResMut<Difficulty>,
 ) {
-    for _ in 0..ENEMY_CREATURE_COUNT {
+    for _ in 0..difficulty.enemy_count() {
         generate_creature(
             &mut commands,
             &mut generate_creature_rng.0,
             &textures,
-            ENEMY_CREATURE_TIER,
+            difficulty.enemy_tier(),
             0,
+            difficulty.enemy_pop_mult(),
         );
     }
 }
@@ -439,11 +439,15 @@ fn handle_battle_over(
     enemy_query: Query<Entity, (With<BattleCreature>, With<Enemy>)>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut next_game_result: ResMut<NextState<GameResult>>,
+    mut difficulty: ResMut<Difficulty>,
+    mut round: ResMut<Round>,
 ) {
     if ally_query.is_empty() {
         next_game_result.set(GameResult::Lose);
         next_game_state.set(GameState::GameOver);
     } else if enemy_query.is_empty() {
+        round.0 += 1;
+        difficulty.inc_difficulty();
         next_game_state.set(GameState::CreatureManager);
     }
 

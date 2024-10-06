@@ -1,6 +1,11 @@
 use bevy::prelude::*;
 
-use crate::{creature::CreatureStats, ui::create_change_state_button, GameState, WINDOW_SIZE};
+use crate::{
+    creature::CreatureStats,
+    rounds::{Difficulty, Round},
+    ui::create_change_state_button,
+    GameState, WINDOW_SIZE,
+};
 
 pub struct GameOverScreenPlugin;
 
@@ -92,6 +97,8 @@ fn cleanup(
     mut commands: Commands,
     query: Query<Entity, With<GameOverScreenItem>>,
     creature_query: Query<Entity, With<CreatureStats>>,
+    mut difficulty: ResMut<Difficulty>,
+    mut round: ResMut<Round>,
 ) {
     for entity in query.iter() {
         commands.entity(entity).despawn_recursive();
@@ -100,4 +107,7 @@ fn cleanup(
     for entity in creature_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
+
+    *difficulty = Difficulty::default();
+    *round = Round::default();
 }

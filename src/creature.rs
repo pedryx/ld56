@@ -69,6 +69,7 @@ pub fn generate_creature(
     textures: &Res<TextureAssets>,
     tier: u8,
     generation: u64,
+    pop_multiplier: f32,
 ) -> Entity {
     let creature = CreatureStats {
         movement_speed: generate_stat_value(
@@ -88,7 +89,10 @@ pub fn generate_creature(
         ],
         _generation: generation,
     };
-    let population = PopulationSize(rng.gen_range(MIN_POPULATION..=MAX_POPULATION));
+
+    let population = rng.gen_range(MIN_POPULATION..=MAX_POPULATION) as f32;
+    let population = population * pop_multiplier;
+    let population = PopulationSize(population as u32);
 
     commands
         .spawn(SpriteBundle {
