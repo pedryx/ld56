@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal};
 
-use crate::loading::TextureAssets;
+use crate::{
+    loading::TextureAssets, rounds::RoundOverEvent, screens::new_creature_screen::PlayerCreature,
+};
 
 const NUM_TIERS: u8 = 10;
 
@@ -35,7 +37,7 @@ impl Plugin for CreaturePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(GenerateCreatureRng(StdRng::from_entropy()))
             .init_resource::<CreatureGeneration>()
-            .add_systems(Update, delete_empty_creatures);
+            .add_systems(Update, (delete_empty_creatures, breed_creatures));
     }
 }
 
@@ -177,6 +179,17 @@ fn delete_empty_creatures(
     for (entity, &PopulationSize(size)) in query.iter() {
         if size == 0 {
             commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
+fn breed_creatures(
+    mut er_round_over: EventReader<RoundOverEvent>,
+    mut population_query: Query<&mut PopulationSize, With<PlayerCreature>>,
+) {
+    for _ in er_round_over.read() {
+        for mut population in population_query.iter_mut() {
+            population.0 = (population.0 as f32 * 1.5) as u32;
         }
     }
 }

@@ -18,9 +18,14 @@ pub struct RoundsPlugin;
 
 impl Plugin for RoundsPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Round>().init_resource::<Difficulty>();
+        app.init_resource::<Round>()
+            .init_resource::<Difficulty>()
+            .add_event::<RoundOverEvent>();
     }
 }
+
+#[derive(Event)]
+pub struct RoundOverEvent;
 
 #[derive(Resource)]
 pub struct Round(pub u32);

@@ -14,7 +14,7 @@ use crate::{
         generate_creature, CreatureStats, GenerateCreatureRng, PhysicalAbility, PopulationSize,
     },
     loading::TextureAssets,
-    rounds::{Difficulty, Round},
+    rounds::{Difficulty, Round, RoundOverEvent},
     GameState, WINDOW_SIZE,
 };
 
@@ -441,6 +441,7 @@ fn handle_battle_over(
     mut next_game_result: ResMut<NextState<GameResult>>,
     mut difficulty: ResMut<Difficulty>,
     mut round: ResMut<Round>,
+    mut ew_round_over: EventWriter<RoundOverEvent>,
 ) {
     if ally_query.is_empty() {
         next_game_result.set(GameResult::Lose);
@@ -449,6 +450,7 @@ fn handle_battle_over(
         round.0 += 1;
         difficulty.inc_difficulty();
         next_game_state.set(GameState::CreatureManager);
+        ew_round_over.send(RoundOverEvent);
     }
 
     // TODO: victory on last stage if no infinity mode
