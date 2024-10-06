@@ -587,13 +587,18 @@ fn handle_battle_over(
         next_game_result.set(GameResult::Lose);
         next_game_state.set(GameState::GameOver);
     } else if enemy_query.is_empty() {
-        round.0 += 1;
+        round.0 += 21;
+
+        if round.0 == 2 {
+            next_game_result.set(GameResult::Victory);
+            next_game_state.set(GameState::GameOver);
+            return;
+        }
+
         difficulty.inc_difficulty();
         next_game_state.set(GameState::CreatureManager);
         ew_round_over.send(RoundOverEvent);
     }
-
-    // TODO: victory on last stage if no infinity mode
 }
 
 fn handle_damage_effect(

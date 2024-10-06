@@ -22,7 +22,7 @@ impl Plugin for GameOverScreenPlugin {
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum GameResult {
-    _Victory,
+    Victory,
     #[default]
     Lose,
 }
@@ -76,7 +76,7 @@ fn setup(
             },
             GameOverScreenItem,
         ));
-    } else if *game_result.get() == GameResult::_Victory {
+    } else if *game_result.get() == GameResult::Victory {
         commands.spawn((
             Text2dBundle {
                 text: Text::from_section(
