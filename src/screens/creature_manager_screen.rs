@@ -168,7 +168,7 @@ fn generate_new_creature(
             &textures,
             tier,
             creature_generation.0,
-            0.2,
+            1.2,
         );
 
         creature_generation.0 += 1;
