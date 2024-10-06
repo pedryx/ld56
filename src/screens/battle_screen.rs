@@ -54,6 +54,7 @@ impl Plugin for BattleScreenPlugin {
                     )
                         .chain(),
                     setup_environment,
+                    create_round_counter,
                 ),
             )
             .add_systems(OnExit(GameState::Battle), cleanup)
@@ -136,6 +137,33 @@ struct AttackRng(StdRng);
 
 #[derive(Resource)]
 struct CreaturePositionRng(StdRng);
+
+fn create_round_counter(mut commands: Commands, textures: Res<TextureAssets>, round: Res<Round>) {
+    commands
+        .spawn((
+            SpriteBundle {
+                texture: textures.round_holder.clone(),
+                transform: Transform::from_translation(
+                    (WINDOW_SIZE * Vec2::new(0.0, -0.4)).extend(50.0),
+                )
+                .with_scale(Vec2::splat(0.4).extend(1.0)),
+                ..default()
+            },
+            BattleScreenItem,
+        ))
+        .with_children(|children| {
+            children.spawn(Text2dBundle {
+                text: Text::from_section(
+                    round.0.to_string(),
+                    TextStyle {
+                        font_size: 96.0,
+                        ..default()
+                    },
+                ),
+                ..default()
+            });
+        });
+}
 
 fn setup_environment(
     mut commands: Commands,

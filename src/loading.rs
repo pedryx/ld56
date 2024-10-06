@@ -56,4 +56,6 @@ pub struct TextureAssets {
     pub creature_manager_background: Handle<Image>,
     #[asset(path = "textures/menu_background.png")]
     pub menu_background: Handle<Image>,
+    #[asset(path = "textures/round_holder.png")]
+    pub round_holder: Handle<Image>,
 }

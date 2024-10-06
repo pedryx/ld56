@@ -33,10 +33,7 @@ impl Default for ButtonColors {
 #[derive(Component)]
 struct Menu;
 
-fn setup_menu(
-    mut commands: Commands,
-    textures: Res<TextureAssets>,
-) {
+fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
     // background
     commands.spawn((
         SpriteBundle {
@@ -50,11 +47,16 @@ fn setup_menu(
     // title
     commands.spawn((
         Text2dBundle {
-            text: Text::from_section("Tiny Legion", TextStyle {
-                font_size: 128.0,
-                ..default()
-            }),
-            transform: Transform::from_translation((WINDOW_SIZE * Vec2::new(0.0, 0.3)).extend(TITLE_Z)),
+            text: Text::from_section(
+                "Tiny Legion",
+                TextStyle {
+                    font_size: 128.0,
+                    ..default()
+                },
+            ),
+            transform: Transform::from_translation(
+                (WINDOW_SIZE * Vec2::new(0.0, 0.3)).extend(TITLE_Z),
+            ),
             ..default()
         },
         Menu,
@@ -178,7 +180,7 @@ fn setup_menu(
                         normal: Color::NONE,
                         hovered: Color::linear_rgb(0.25, 0.25, 0.25),
                     },
-                    OpenLink("https://github.com/NiklasEi/bevy_game_template"),
+                    OpenLink("https://github.com/pedryx/tiny-legion"),
                 ))
                 .with_children(|parent| {
                     parent.spawn(TextBundle::from_section(

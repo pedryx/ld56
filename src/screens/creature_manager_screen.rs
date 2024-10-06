@@ -36,7 +36,7 @@ impl Plugin for CreatureManagerScreenPlugin {
             .add_systems(
                 OnEnter(GameState::CreatureManager),
                 (
-                    (generate_new_creature, setup_ui).chain(),
+                    (generate_new_creature, (setup_ui, create_round_counter)).chain(),
                     setup_stats_windows,
                 ),
             )
@@ -55,7 +55,7 @@ impl Plugin for CreatureManagerScreenPlugin {
             )
             .add_systems(
                 Update,
-                (partial_cleanup, setup_ui)
+                (partial_cleanup, (setup_ui, create_round_counter))
                     .chain()
                     .run_if(on_event::<CreatureCombinedEvent>()),
             );
@@ -111,6 +111,33 @@ enum StatLabel {
 #[derive(Component)]
 struct StatWindow;
 
+fn create_round_counter(mut commands: Commands, textures: Res<TextureAssets>, round: Res<Round>) {
+    commands
+        .spawn((
+            SpriteBundle {
+                texture: textures.round_holder.clone(),
+                transform: Transform::from_translation(
+                    (WINDOW_SIZE * Vec2::new(0.0, -0.4)).extend(0.0),
+                )
+                .with_scale(Vec2::splat(0.4).extend(1.0)),
+                ..default()
+            },
+            CreatureManagerScreenItem,
+        ))
+        .with_children(|children| {
+            children.spawn(Text2dBundle {
+                text: Text::from_section(
+                    round.0.to_string(),
+                    TextStyle {
+                        font_size: 96.0,
+                        ..default()
+                    },
+                ),
+                ..default()
+            });
+        });
+}
+
 fn generate_new_creature(
     mut commands: Commands,
     mut generate_creature_rng: ResMut<GenerateCreatureRng>,
@@ -136,7 +163,7 @@ fn generate_new_creature(
             &textures,
             tier,
             creature_generation.0,
-            0.2,
+            1.2,
         );
 
         creature_generation.0 += 1;
