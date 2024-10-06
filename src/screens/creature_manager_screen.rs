@@ -1,4 +1,7 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    sprite::{MaterialMesh2dBundle, Mesh2dHandle},
+};
 use rand::{rngs::StdRng, Rng, SeedableRng};
 
 use crate::{
@@ -29,7 +32,10 @@ impl Plugin for CreatureManagerScreenPlugin {
             .add_event::<CombineButtonPressedEvent>()
             .add_systems(
                 OnEnter(GameState::CreatureManager),
-                (generate_new_creature, setup_ui).chain(),
+                (
+                    (generate_new_creature, setup_ui).chain(),
+                    setup_stats_windows,
+                ),
             )
             .add_systems(OnExit(GameState::CreatureManager), cleanup)
             .add_systems(
@@ -39,12 +45,13 @@ impl Plugin for CreatureManagerScreenPlugin {
                     handle_creature_button,
                     handle_combine_button,
                     combine_creatures,
+                    show_stats,
                 )
                     .run_if(in_state(GameState::CreatureManager)),
             )
             .add_systems(
                 Update,
-                (cleanup, setup_ui)
+                (partial_cleanup, setup_ui)
                     .chain()
                     .run_if(on_event::<CreatureCombinedEvent>()),
             );
@@ -88,6 +95,18 @@ struct CreatureButton {
     selected: bool,
 }
 
+#[derive(Component, Clone, Copy, PartialEq, Eq)]
+enum StatLabel {
+    MovementSpeed,
+    HP,
+    Stamina,
+    StaminaRegen,
+    PhysicalAbility,
+}
+
+#[derive(Component)]
+struct StatWindow;
+
 fn generate_new_creature(
     mut commands: Commands,
     mut generate_creature_rng: ResMut<GenerateCreatureRng>,
@@ -117,6 +136,147 @@ fn generate_new_creature(
         creature_generation.0 += 1;
         commands.entity(entity).insert(PlayerCreature);
     }
+}
+
+const STATS_X: f32 = 0.37;
+const STATS_Y1: f32 = 0.31;
+const STATS_Y2: f32 = -0.05;
+const STATS_SIZE: Vec2 = Vec2::new(240.0, 240.0);
+const STAT_FONT_SIZE: f32 = 18.0;
+const STAT_LABEL_X: f32 = -STATS_SIZE.x / 2.0 + 10.0;
+const STAT_LABEL_Z: f32 = 20.0;
+const ABILITIES_FONT_SIZE: f32 = 16.0;
+
+fn setup_stats_windows(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    let color_material_handle = materials.add(Color::linear_rgb(0.16, 0.16, 0.16));
+
+    let stats_text_style = TextStyle {
+        font_size: STAT_FONT_SIZE,
+        ..default()
+    };
+    let abilities_text_style = TextStyle {
+        font_size: ABILITIES_FONT_SIZE,
+        ..default()
+    };
+
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Rectangle::new(STATS_SIZE.x, STATS_SIZE.y))),
+                material: color_material_handle.clone(),
+                transform: Transform::from_translation(
+                    (WINDOW_SIZE * Vec2::new(STATS_X, STATS_Y1)).extend(0.0),
+                ),
+                ..default()
+            },
+            CreatureManagerScreenItem,
+            StatWindow,
+        ))
+        .with_children(|children| {
+            let labels = [
+                ("Movement Speed: ", StatLabel::MovementSpeed),
+                ("HP: ", StatLabel::HP),
+                ("Stamina: ", StatLabel::Stamina),
+                ("Stamina Regen: ", StatLabel::StaminaRegen),
+            ];
+            let value_label = "00.00";
+
+            for (i, (label, label_type)) in labels.iter().enumerate() {
+                children
+                    .spawn((Text2dBundle {
+                        text: Text {
+                            sections: vec![
+                                TextSection {
+                                    value: label.to_string(),
+                                    style: stats_text_style.clone(),
+                                },
+                                TextSection {
+                                    value: value_label.to_string(),
+                                    style: stats_text_style.clone(),
+                                },
+                            ],
+                            ..default()
+                        },
+                        text_anchor: bevy::sprite::Anchor::CenterLeft,
+                        transform: Transform::from_xyz(
+                            STAT_LABEL_X,
+                            STATS_SIZE.y / 2.0 - (i * 2 + 1) as f32 * STAT_FONT_SIZE,
+                            STAT_LABEL_Z,
+                        ),
+                        ..default()
+                    },))
+                    .insert(*label_type);
+            }
+        });
+
+    commands
+        .spawn((
+            MaterialMesh2dBundle {
+                mesh: Mesh2dHandle(meshes.add(Rectangle::new(STATS_SIZE.x, STATS_SIZE.y))),
+                material: color_material_handle.clone(),
+                transform: Transform::from_translation(
+                    (WINDOW_SIZE * Vec2::new(STATS_X, STATS_Y2)).extend(0.0),
+                ),
+                ..default()
+            },
+            CreatureManagerScreenItem,
+            StatWindow,
+        ))
+        .with_children(|children| {
+            // There are alway 3 phys abilities.
+            for i in 0..3 {
+                let text_sections = vec![
+                    TextSection {
+                        value: "Name:".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "\n- Damage: ".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "00.00".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "\n- Stamina Cost: ".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "00.00".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "\n- Global Cooldown: ".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                    TextSection {
+                        value: "00.00".to_string(),
+                        style: abilities_text_style.clone(),
+                    },
+                ];
+
+                children
+                    .spawn((Text2dBundle {
+                        text: Text {
+                            sections: text_sections,
+                            ..default()
+                        },
+                        text_anchor: bevy::sprite::Anchor::CenterLeft,
+                        transform: Transform::from_xyz(
+                            STAT_LABEL_X,
+                            STATS_SIZE.y / 2.0 - (((i * 5) as f32) + 2.5) * ABILITIES_FONT_SIZE,
+                            STAT_LABEL_Z,
+                        ),
+                        ..default()
+                    },))
+                    .insert(StatLabel::PhysicalAbility);
+            }
+        });
 }
 
 fn setup_ui(
@@ -187,7 +347,7 @@ fn setup_ui(
         ));
 
         x += 1;
-        if x >= GRID_SIZE.x as u32 {
+        if x >= (GRID_SIZE.x - 2.0) as u32 {
             x = 0;
             y += 1;
             if y >= GRID_SIZE.y as u32 {
@@ -262,6 +422,24 @@ fn setup_ui(
         CreatureManagerScreenItem,
         PopulationText,
     ));
+}
+
+fn partial_cleanup(
+    mut commands: Commands,
+    query: Query<
+        Entity,
+        (
+            With<CreatureManagerScreenItem>,
+            Without<StatWindow>,
+            Without<StatLabel>,
+        ),
+    >,
+    mut selected_creatures_counter: ResMut<SelectedCreaturesCounter>,
+) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+    selected_creatures_counter.0 = 0;
 }
 
 fn cleanup(
@@ -442,5 +620,72 @@ fn combine_creatures(
             .insert(children);
 
         ew_creature_created.send(CreatureCombinedEvent);
+    }
+}
+
+fn show_stats(
+    creature_button_query: Query<(&Interaction, &CreatureButton)>,
+    mut stat_window_query: Query<&mut Visibility, With<StatWindow>>,
+    mut stat_label_query: Query<(&mut Text, &StatLabel)>,
+    creature_query: Query<&CreatureStats, With<PlayerCreature>>,
+) {
+    let mut hovered_creature = None;
+    for (interaction, creature_button) in creature_button_query.iter() {
+        if *interaction == Interaction::Hovered {
+            hovered_creature = Some(creature_button.entity);
+        }
+    }
+
+    for mut visibility in stat_window_query.iter_mut() {
+        *visibility = if hovered_creature.is_none() {
+            Visibility::Hidden
+        } else {
+            Visibility::Visible
+        };
+    }
+
+    if hovered_creature.is_none() {
+        return;
+    }
+    let stats = creature_query.get(hovered_creature.unwrap()).unwrap();
+
+    let (mut text, _) = stat_label_query
+        .iter_mut()
+        .find(|&(_, &label)| label == StatLabel::HP)
+        .unwrap();
+    text.sections[1].value = format!("{:.2}", stats.hp);
+    let (mut text, _) = stat_label_query
+        .iter_mut()
+        .find(|&(_, &label)| label == StatLabel::MovementSpeed)
+        .unwrap();
+    text.sections[1].value = format!("{:.2}", stats.movement_speed);
+    let (mut text, _) = stat_label_query
+        .iter_mut()
+        .find(|&(_, &label)| label == StatLabel::Stamina)
+        .unwrap();
+    text.sections[1].value = format!("{:.2}", stats.stamina);
+    let (mut text, _) = stat_label_query
+        .iter_mut()
+        .find(|&(_, &label)| label == StatLabel::StaminaRegen)
+        .unwrap();
+    text.sections[1].value = format!("{:.2}", stats.stamina_regen);
+
+    let phys_ability_texts = stat_label_query
+        .iter_mut()
+        .filter(|&(_, &label)| label == StatLabel::PhysicalAbility)
+        .map(|(text, _)| text);
+    for (ability_index, mut text) in phys_ability_texts.enumerate() {
+        assert!(ability_index < 3);
+
+        text.sections[0].value = stats.physical_abilities[ability_index].name.to_string();
+        text.sections[2].value = format!("{:.2}", stats.physical_abilities[ability_index].damage);
+        text.sections[4].value = format!(
+            "{:.2}",
+            stats.physical_abilities[ability_index].stamina_cost
+        );
+        text.sections[6].value = format!(
+            "{:.2}",
+            stats.physical_abilities[ability_index].global_cooldown
+        );
     }
 }

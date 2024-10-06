@@ -259,7 +259,7 @@ fn find_nearest_enemy(
     for (_, mut context, enemy_transform) in enemy_query.iter_mut() {
         let position = enemy_transform.translation.xy();
         context.distance_squared_to_nearest_enemy = f32::INFINITY;
-        
+
         for (entity, _, ally_transform) in ally_query.iter() {
             let distance_squared = position.distance_squared(ally_transform.translation.xy());
 

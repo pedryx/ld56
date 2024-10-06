@@ -86,7 +86,7 @@ impl CreatureStats {
 
 #[derive(Debug, Clone)]
 pub struct PhysicalAbility {
-    pub _name: &'static str,
+    pub name: &'static str,
     pub stamina_cost: f32,
     pub damage: f32,
     pub global_cooldown: f32,
@@ -157,7 +157,7 @@ fn generate_stat_value(min: f32, max: f32, tier: u8, rng: &mut StdRng, inverse: 
 
 fn generate_physical_ability(name: &'static str, tier: u8, rng: &mut StdRng) -> PhysicalAbility {
     PhysicalAbility {
-        _name: name,
+        name,
         stamina_cost: generate_stat_value(
             MIN_PHYS_STAMINA_COST,
             MAX_PHYS_STAMINA_COST,
