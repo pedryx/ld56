@@ -20,8 +20,14 @@ impl Plugin for RoundsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Round>()
             .init_resource::<Difficulty>()
+            .init_resource::<GameSettings>()
             .add_event::<RoundOverEvent>();
     }
+}
+
+#[derive(Resource, Default)]
+pub struct GameSettings {
+    pub infinity_mode_on: bool,
 }
 
 #[derive(Event)]

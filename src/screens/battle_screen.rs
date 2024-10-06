@@ -18,11 +18,11 @@ use crate::{
         PopulationSize,
     },
     loading::{AudioAssets, TextureAssets},
-    rounds::{Difficulty, Round, RoundOverEvent},
-    GameState, WINDOW_SIZE,
+    rounds::{Difficulty, GameSettings, Round, RoundOverEvent},
+    GameResult, GameState, WINDOW_SIZE,
 };
 
-use super::{game_over_screen::GameResult, new_creature_screen::PlayerCreature};
+use super::new_creature_screen::PlayerCreature;
 
 const CREATURE_Z: f32 = 1.0;
 const CREATURE_SCALE: f32 = 1.3;
@@ -578,20 +578,18 @@ fn handle_battle_over(
     ally_query: Query<Entity, (With<BattleCreature>, Without<Enemy>)>,
     enemy_query: Query<Entity, (With<BattleCreature>, With<Enemy>)>,
     mut next_game_state: ResMut<NextState<GameState>>,
-    mut next_game_result: ResMut<NextState<GameResult>>,
     mut difficulty: ResMut<Difficulty>,
     mut round: ResMut<Round>,
     mut ew_round_over: EventWriter<RoundOverEvent>,
+    game_settings: Res<GameSettings>,
 ) {
     if ally_query.is_empty() {
-        next_game_result.set(GameResult::Lose);
-        next_game_state.set(GameState::GameOver);
+        next_game_state.set(GameState::GameOver(GameResult::Defeat));
     } else if enemy_query.is_empty() {
-        round.0 += 21;
+        round.0 += 1;
 
-        if round.0 == 2 {
-            next_game_result.set(GameResult::Victory);
-            next_game_state.set(GameState::GameOver);
+        if round.0 == 21 && !game_settings.infinity_mode_on {
+            next_game_state.set(GameState::GameOver(GameResult::Victory));
             return;
         }
 

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl};
 
+use crate::GameResult;
 use crate::{
     audio::SOUND_EFFECTS_GLOBAL_VOLUME,
     creature::CreatureStats,
@@ -14,17 +15,11 @@ pub struct GameOverScreenPlugin;
 
 impl Plugin for GameOverScreenPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<GameResult>()
-            .add_systems(OnEnter(GameState::GameOver), setup)
-            .add_systems(OnExit(GameState::GameOver), cleanup);
+        app.add_systems(OnEnter(GameState::GameOver(GameResult::Victory)), setup)
+            .add_systems(OnEnter(GameState::GameOver(GameResult::Defeat)), setup)
+            .add_systems(OnExit(GameState::GameOver(GameResult::Victory)), cleanup)
+            .add_systems(OnExit(GameState::GameOver(GameResult::Defeat)), cleanup);
     }
-}
-
-#[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum GameResult {
-    Victory,
-    #[default]
-    Lose,
 }
 
 #[derive(Component)]
@@ -32,7 +27,7 @@ pub struct GameOverScreenItem;
 
 fn setup(
     mut commands: Commands,
-    game_result: Res<State<GameResult>>,
+    game_state: Res<State<GameState>>,
     audio: Res<Audio>,
     audio_assets: Res<AudioAssets>,
 ) {
@@ -53,7 +48,7 @@ fn setup(
         GameOverScreenItem,
     ));
 
-    if *game_result.get() == GameResult::Lose {
+    if *game_state.get() == GameState::GameOver(GameResult::Defeat) {
         audio
             .play(audio_assets.defeat.clone())
             .with_volume(SOUND_EFFECTS_GLOBAL_VOLUME);
@@ -76,7 +71,7 @@ fn setup(
             },
             GameOverScreenItem,
         ));
-    } else if *game_result.get() == GameResult::Victory {
+    } else if *game_state.get() == GameState::GameOver(GameResult::Victory) {
         commands.spawn((
             Text2dBundle {
                 text: Text::from_section(

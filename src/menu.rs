@@ -1,4 +1,5 @@
 use crate::loading::TextureAssets;
+use crate::rounds::GameSettings;
 use crate::{GameState, WINDOW_SIZE};
 use bevy::prelude::*;
 
@@ -33,6 +34,9 @@ impl Default for ButtonColors {
 #[derive(Component)]
 struct Menu;
 
+#[derive(Component)]
+struct InfinityModeButton;
+
 fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
     // background
     commands.spawn((
@@ -63,50 +67,81 @@ fn setup_menu(mut commands: Commands, textures: Res<TextureAssets>) {
     ));
 
     info!("menu");
-    commands
-        .spawn((
-            NodeBundle {
-                style: Style {
-                    width: Val::Percent(100.0),
-                    height: Val::Percent(100.0),
-                    flex_direction: FlexDirection::Column,
-                    align_items: AlignItems::Center,
-                    justify_content: JustifyContent::Center,
-                    ..default()
-                },
+    let mut entity = commands.spawn((
+        NodeBundle {
+            style: Style {
+                width: Val::Percent(100.0),
+                height: Val::Percent(100.0),
+                flex_direction: FlexDirection::Column,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
                 ..default()
             },
-            Menu,
-        ))
-        .with_children(|children| {
-            let button_colors = ButtonColors::default();
-            children
-                .spawn((
-                    ButtonBundle {
-                        style: Style {
-                            width: Val::Px(140.0),
-                            height: Val::Px(50.0),
-                            justify_content: JustifyContent::Center,
-                            align_items: AlignItems::Center,
-                            ..Default::default()
-                        },
-                        background_color: button_colors.normal.into(),
+            ..default()
+        },
+        Menu,
+    ));
+    entity.with_children(|children| {
+        let button_colors = ButtonColors::default();
+        children
+            .spawn((
+                ButtonBundle {
+                    style: Style {
+                        width: Val::Px(240.0),
+                        height: Val::Px(80.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
                         ..Default::default()
                     },
-                    button_colors,
-                    ChangeState(GameState::CreatureManager),
-                ))
-                .with_children(|parent| {
-                    parent.spawn(TextBundle::from_section(
-                        "Play",
-                        TextStyle {
-                            font_size: 40.0,
-                            color: Color::linear_rgb(0.9, 0.9, 0.9),
-                            ..default()
-                        },
-                    ));
-                });
-        });
+                    background_color: button_colors.normal.into(),
+                    ..Default::default()
+                },
+                button_colors,
+                ChangeState(GameState::CreatureManager),
+            ))
+            .with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "Normal Mode",
+                    TextStyle {
+                        font_size: 30.0,
+                        color: Color::linear_rgb(0.9, 0.9, 0.9),
+                        ..default()
+                    },
+                ));
+            });
+    });
+    entity.with_children(|children| {
+        let button_colors = ButtonColors::default();
+        children
+            .spawn((
+                ButtonBundle {
+                    style: Style {
+                        width: Val::Px(240.0),
+                        height: Val::Px(80.0),
+                        justify_content: JustifyContent::Center,
+                        align_items: AlignItems::Center,
+                        margin: UiRect::top(Val::Px(10.0)),
+                        ..Default::default()
+                    },
+                    background_color: button_colors.normal.into(),
+                    transform: Transform::from_xyz(0.0, -80.0, 0.0),
+                    ..Default::default()
+                },
+                button_colors,
+                ChangeState(GameState::CreatureManager),
+                InfinityModeButton,
+            ))
+            .with_children(|parent| {
+                parent.spawn(TextBundle::from_section(
+                    "Infinity Mode",
+                    TextStyle {
+                        font_size: 30.0,
+                        color: Color::linear_rgb(0.9, 0.9, 0.9),
+                        ..default()
+                    },
+                ));
+            });
+    });
     commands
         .spawn((
             NodeBundle {
@@ -218,14 +253,19 @@ fn click_play_button(
             &ButtonColors,
             Option<&ChangeState>,
             Option<&OpenLink>,
+            Option<&InfinityModeButton>,
         ),
         (Changed<Interaction>, With<Button>),
     >,
+    mut game_settings: ResMut<GameSettings>,
 ) {
-    for (interaction, mut color, button_colors, change_state, open_link) in &mut interaction_query {
+    for (interaction, mut color, button_colors, change_state, open_link, infinity_mode_button) in
+        &mut interaction_query
+    {
         match *interaction {
             Interaction::Pressed => {
                 if let Some(state) = change_state {
+                    game_settings.infinity_mode_on = infinity_mode_button.is_some();
                     next_state.set(state.0.clone());
                 } else if let Some(link) = open_link {
                     if let Err(error) = webbrowser::open(link.0) {

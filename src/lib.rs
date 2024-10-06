@@ -30,7 +30,14 @@ enum GameState {
     NewCreature,
     Battle,
     CreatureManager,
-    GameOver,
+    GameOver(GameResult),
+}
+
+#[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
+pub enum GameResult {
+    Victory,
+    #[default]
+    Defeat,
 }
 
 pub const WINDOW_SIZE: Vec2 = Vec2::new(1280.0, 720.0);
